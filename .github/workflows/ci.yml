@@ -1,8 +1,14 @@
 name: Verify
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
 jobs:
   api:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     services:
       postgres:
         image: postgres:17-alpine
@@ -25,13 +31,15 @@ jobs:
       - run: uv run pytest
   web:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     env: {DJANGO_DEBUG: '1', E2E_EDITOR_PASSWORD: 'CI-Test-Password-42!'}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: {node-version: '24', cache: npm, cache-dependency-path: frontend/package-lock.json}
       - uses: astral-sh/setup-uv@v6
-        with: {version: '0.9.20', enable-cache: true}
+        # Optional cache upload stalled the previous web run after all tests passed.
+        with: {version: '0.9.20', enable-cache: false}
       - run: uv sync --frozen
       - run: npm ci
         working-directory: frontend
