@@ -1,0 +1,53 @@
+name: Verify
+on: [push, pull_request]
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env: {POSTGRES_DB: terraklink, POSTGRES_USER: terraklink, POSTGRES_PASSWORD: ci-test-password}
+        ports: [5432:5432]
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      DJANGO_DEBUG: '1'
+      POSTGRES_HOST: localhost
+      POSTGRES_DB: terraklink
+      POSTGRES_USER: terraklink
+      POSTGRES_PASSWORD: ci-test-password
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with: {version: '0.9.20', enable-cache: true}
+      - run: uv sync --frozen
+      - run: uv run ruff check backend
+      - run: uv run backend/manage.py makemigrations --check --dry-run
+      - run: uv run pytest
+  web:
+    runs-on: ubuntu-latest
+    env: {DJANGO_DEBUG: '1', E2E_EDITOR_PASSWORD: 'CI-Test-Password-42!'}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '24', cache: npm, cache-dependency-path: frontend/package-lock.json}
+      - uses: astral-sh/setup-uv@v6
+        with: {version: '0.9.20', enable-cache: true}
+      - run: uv sync --frozen
+      - run: npm ci
+        working-directory: frontend
+      - run: npm run build && npm test && npm audit --audit-level=high
+        working-directory: frontend
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - run: |
+          uv run backend/manage.py migrate
+          uv run backend/manage.py seed_content
+          uv run backend/manage.py shell -c "import os; from django.contrib.auth import get_user_model; get_user_model().objects.create_superuser('editor', password=os.environ['E2E_EDITOR_PASSWORD'])"
+          uv run backend/manage.py runserver 127.0.0.1:8000 --noreload > /tmp/backend.log 2>&1 &
+          cd frontend
+          npm run dev > /tmp/frontend.log 2>&1 &
+          for i in $(seq 1 30); do curl --fail http://127.0.0.1:5173/api/health/ && break || sleep 1; done
+          npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with: {name: browser-test-results, path: frontend/test-results}

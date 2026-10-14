@@ -1,0 +1,357 @@
+{
+  "theme": {
+    "accent": "#ff6d00",
+    "font": "Open Sans"
+  },
+  "company": {
+    "name": "TERRAKLINK",
+    "phone": "+7 (727) 000-00-00",
+    "email": "info@terraklink.example",
+    "address": "Казахстан, г. Алматы — демонстрационный адрес",
+    "demo": true
+  },
+  "sections": [
+    {
+      "id": "hero",
+      "type": "hero",
+      "title": "Кирпичный завод «TERRAKLINK»",
+      "subtitle": "",
+      "visible": true,
+      "image": "/assets/hero-family.png",
+      "video": "",
+      "color": "#222222",
+      "background": "#ffffff",
+      "font": "Open Sans",
+      "brightness": 100,
+      "saturation": 100,
+      "items": [
+        {
+          "id": "slide-1",
+          "title": "Кирпич для вашего дома",
+          "text": "Демонстрационный баннер референса",
+          "image": "/assets/hero-family.png",
+          "category": "",
+          "price": 0,
+          "tag": ""
+        },
+        {
+          "id": "slide-2",
+          "title": "Коллекция клинкерного кирпича",
+          "text": "Демонстрационный баннер референса",
+          "image": "/assets/banner.jpg",
+          "category": "",
+          "price": 0,
+          "tag": ""
+        }
+      ]
+    },
+    {
+      "id": "features",
+      "type": "features",
+      "title": "",
+      "subtitle": "",
+      "visible": true,
+      "image": "",
+      "video": "",
+      "color": "#222222",
+      "background": "#f7f8f9",
+      "font": "Open Sans",
+      "brightness": 100,
+      "saturation": 100,
+      "items": [
+        {
+          "id": "f1",
+          "title": "Поставки для вашего проекта",
+          "text": "От частного дома до жилого комплекса",
+          "image": "/assets/feature-1.png",
+          "category": "",
+          "price": 0,
+          "tag": ""
+        },
+        {
+          "id": "f2",
+          "title": "Баварская кладка",
+          "text": "Выразительные сочетания оттенков кирпича",
+          "image": "/assets/feature-2.png",
+          "category": "",
+          "price": 0,
+          "tag": ""
+        },
+        {
+          "id": "f3",
+          "title": "Точная геометрия",
+          "text": "Внимание к каждой детали вашего фасада",
+          "image": "/assets/feature-3.png",
+          "category": "",
+          "price": 0,
+          "tag": ""
+        },
+        {
+          "id": "f4",
+          "title": "Натуральный материал",
+          "text": "Керамика для уютного и долговечного дома",
+          "image": "/assets/feature-4.png",
+          "category": "",
+          "price": 0,
+          "tag": ""
+        }
+      ]
+    },
+    {
+      "id": "catalog",
+      "type": "catalog",
+      "title": "Продукция",
+      "subtitle": "",
+      "visible": true,
+      "image": "",
+      "video": "",
+      "color": "#222222",
+      "background": "#ffffff",
+      "font": "Open Sans",
+      "brightness": 100,
+      "saturation": 100,
+      "items": [
+        {
+          "id": "p1",
+          "title": "Камень счастья 0,7 НФ",
+          "text": "Облицовочный керамический кирпич",
+          "image": "/assets/product-1.jpg",
+          "category": "Облицовочный кирпич",
+          "price": 320,
+          "tag": "Новинка"
+        },
+        {
+          "id": "p2",
+          "title": "Хранитель времени 1 НФ",
+          "text": "Выразительная фактура и тёплый оттенок",
+          "image": "/assets/product-2.jpg",
+          "category": "Коллекция Тайга",
+          "price": 350,
+          "tag": ""
+        },
+        {
+          "id": "p3",
+          "title": "Дар земли 0,7 НФ",
+          "text": "Естественная палитра для вашего фасада",
+          "image": "/assets/product-3.jpg",
+          "category": "Облицовочный кирпич",
+          "price": 290,
+          "tag": ""
+        },
+        {
+          "id": "p4",
+          "title": "Красный оберег 1 НФ",
+          "text": "Классический цвет керамического кирпича",
+          "image": "/assets/product-4.jpg",
+          "category": "Облицовочный кирпич",
+          "price": 310,
+          "tag": ""
+        },
+        {
+          "id": "p5",
+          "title": "Тайга графит 1 НФ",
+          "text": "Глубокий цвет, выразительная поверхность",
+          "image": "/assets/product-5.jpg",
+          "category": "Коллекция Тайга",
+          "price": 390,
+          "tag": "Коллекция Тайга"
+        },
+        {
+          "id": "p6",
+          "title": "Клинкер бежевый 0,7 НФ",
+          "text": "Светлый кирпич для современной архитектуры",
+          "image": "/assets/product-6.jpg",
+          "category": "Клинкер",
+          "price": 420,
+          "tag": ""
+        }
+      ]
+    },
+    {
+      "id": "projects",
+      "type": "projects",
+      "title": "Выполненные проекты",
+      "subtitle": "Идеи для вашей будущей архитектуры",
+      "visible": true,
+      "image": "",
+      "video": "",
+      "color": "#222222",
+      "background": "#f7f8f9",
+      "font": "Open Sans",
+      "brightness": 100,
+      "saturation": 100,
+      "items": [
+        {
+          "id": "pr1",
+          "title": "Современный жилой комплекс",
+          "text": "Пример многоквартирной застройки",
+          "image": "/assets/project-1.jpg",
+          "category": "Многоэтажные",
+          "price": 0,
+          "tag": ""
+        },
+        {
+          "id": "pr2",
+          "title": "Городская архитектура",
+          "text": "Пример применения облицовочного кирпича",
+          "image": "/assets/project-2.jpg",
+          "category": "Многоэтажные",
+          "price": 0,
+          "tag": ""
+        },
+        {
+          "id": "pr3",
+          "title": "Загородный квартал",
+          "text": "Пример малоэтажного строительства",
+          "image": "/assets/project-3.jpg",
+          "category": "Малоэтажные",
+          "price": 0,
+          "tag": ""
+        },
+        {
+          "id": "pr4",
+          "title": "Частный дом",
+          "text": "Пример фактуры и цвета фасада",
+          "image": "/assets/project-4.jpg",
+          "category": "Малоэтажные",
+          "price": 0,
+          "tag": ""
+        }
+      ]
+    },
+    {
+      "id": "consultation",
+      "type": "consultation",
+      "title": "Получите ответ на 5 основных вопросов",
+      "subtitle": "Подскажем, как выбрать кирпич для вашего проекта.",
+      "visible": true,
+      "image": "",
+      "video": "",
+      "color": "#222222",
+      "background": "#ffffff",
+      "font": "Open Sans",
+      "brightness": 100,
+      "saturation": 100,
+      "items": [
+        {
+          "id": "q1",
+          "title": "Как рассчитать стоимость лицевой кладки?",
+          "text": "",
+          "image": "",
+          "category": "",
+          "price": 0,
+          "tag": ""
+        },
+        {
+          "id": "q2",
+          "title": "На чём можно сэкономить при выборе кирпича?",
+          "text": "",
+          "image": "",
+          "category": "",
+          "price": 0,
+          "tag": ""
+        },
+        {
+          "id": "q3",
+          "title": "Как подобрать цвет и фактуру фасада?",
+          "text": "",
+          "image": "",
+          "category": "",
+          "price": 0,
+          "tag": ""
+        },
+        {
+          "id": "q4",
+          "title": "Какой раствор подходит для баварской кладки?",
+          "text": "",
+          "image": "",
+          "category": "",
+          "price": 0,
+          "tag": ""
+        },
+        {
+          "id": "q5",
+          "title": "Чем отличаются форматы 0,7 НФ и 1 НФ?",
+          "text": "",
+          "image": "",
+          "category": "",
+          "price": 0,
+          "tag": ""
+        }
+      ]
+    },
+    {
+      "id": "about",
+      "type": "about",
+      "title": "Кирпич — основа красивого дома",
+      "subtitle": "Мы помогаем подобрать облицовочный кирпич для частного строительства и архитектурных проектов. В каталоге представлены разные оттенки, фактуры и форматы.\n\nРасскажите нам о вашем проекте — мы поможем выбрать подходящее сочетание материала и кладки.",
+      "visible": true,
+      "image": "/assets/about.jpg",
+      "video": "",
+      "color": "#222222",
+      "background": "#f7f8f9",
+      "font": "Open Sans",
+      "brightness": 100,
+      "saturation": 100,
+      "items": []
+    },
+    {
+      "id": "offers",
+      "type": "catalog",
+      "title": "Действующие акции",
+      "subtitle": "Демонстрационные предложения. Цены и наличие уточняются у менеджера.",
+      "visible": true,
+      "image": "",
+      "video": "",
+      "color": "#222222",
+      "background": "#ffffff",
+      "font": "Open Sans",
+      "brightness": 100,
+      "saturation": 100,
+      "items": [
+        {
+          "id": "o1",
+          "title": "Клинкер бежевый 0,7 НФ",
+          "text": "Демонстрационная цена за штуку",
+          "image": "/assets/product-6.jpg",
+          "category": "Клинкер",
+          "price": 350,
+          "tag": "Акция"
+        },
+        {
+          "id": "o2",
+          "title": "Красный оберег 1 НФ",
+          "text": "Демонстрационная цена за штуку",
+          "image": "/assets/product-4.jpg",
+          "category": "Облицовочный кирпич",
+          "price": 280,
+          "tag": "Акция"
+        },
+        {
+          "id": "o3",
+          "title": "Дар земли 0,7 НФ",
+          "text": "Демонстрационная цена за штуку",
+          "image": "/assets/product-3.jpg",
+          "category": "Облицовочный кирпич",
+          "price": 260,
+          "tag": "Акция"
+        }
+      ]
+    },
+    {
+      "id": "contact",
+      "type": "contact",
+      "title": "Обсудим ваш проект",
+      "subtitle": "Поможем выбрать кирпич и рассчитать необходимое количество.",
+      "visible": true,
+      "image": "",
+      "video": "",
+      "color": "#222222",
+      "background": "#f7f8f9",
+      "font": "Open Sans",
+      "brightness": 100,
+      "saturation": 100,
+      "items": []
+    }
+  ]
+}

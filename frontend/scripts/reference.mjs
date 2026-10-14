@@ -1,0 +1,10 @@
+import { chromium } from '@playwright/test';
+import fs from 'node:fs';
+fs.mkdirSync('../docs/screenshots', { recursive: true });
+const browser = await chromium.launch({ headless: true });
+const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+await page.goto('https://likolorpro.ru/', { waitUntil: 'domcontentloaded', timeout: 60000 });
+await page.waitForTimeout(2500);
+await page.screenshot({ path: '../docs/screenshots/reference-desktop.png' });
+console.log(await page.evaluate(() => ({ font: getComputedStyle(document.body).fontFamily, header: document.querySelector('header')?.getBoundingClientRect().height, banners: [...document.querySelectorAll('.banners-big .slides > li')].slice(0, 3).map(el => ({ height: el.getBoundingClientRect().height, background: getComputedStyle(el).backgroundImage })) })));
+await browser.close();
