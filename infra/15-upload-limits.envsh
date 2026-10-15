@@ -1,0 +1,18 @@
+#!/bin/sh
+# Sourced by nginx before its template renderer; reserve 1 MiB for multipart framing.
+MAX_IMAGE_UPLOAD_MB=${MAX_IMAGE_UPLOAD_MB:-10}
+MAX_VIDEO_UPLOAD_MB=${MAX_VIDEO_UPLOAD_MB:-50}
+for limit in "$MAX_IMAGE_UPLOAD_MB" "$MAX_VIDEO_UPLOAD_MB"; do
+  case "$limit" in ''|*[!0-9]*) echo "Upload limits must be integers" >&2; exit 1;; esac
+  if [ "$limit" -lt 1 ] || [ "$limit" -gt 1024 ]; then
+    echo "Upload limits must be between 1 and 1024 MiB" >&2; exit 1
+  fi
+done
+# Normalize leading zeros before shell arithmetic (which otherwise treats them as octal).
+while [ "${MAX_IMAGE_UPLOAD_MB#0}" != "$MAX_IMAGE_UPLOAD_MB" ]; do MAX_IMAGE_UPLOAD_MB=${MAX_IMAGE_UPLOAD_MB#0}; done
+while [ "${MAX_VIDEO_UPLOAD_MB#0}" != "$MAX_VIDEO_UPLOAD_MB" ]; do MAX_VIDEO_UPLOAD_MB=${MAX_VIDEO_UPLOAD_MB#0}; done
+if [ "$MAX_IMAGE_UPLOAD_MB" -gt "$MAX_VIDEO_UPLOAD_MB" ]; then
+  export MAX_REQUEST_UPLOAD_MB=$((MAX_IMAGE_UPLOAD_MB + 1))
+else
+  export MAX_REQUEST_UPLOAD_MB=$((MAX_VIDEO_UPLOAD_MB + 1))
+fi

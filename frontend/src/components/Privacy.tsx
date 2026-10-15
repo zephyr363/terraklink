@@ -1,3 +1,4 @@
+import { useTranslation } from "../i18n";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { MapPin, LocateFixed } from "lucide-react";
@@ -16,6 +17,7 @@ export function CookieBanner({
   reopen: boolean;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const [consent, setConsent] = useState(readConsent);
   const accept = (analytics: boolean) => {
     setConsent(saveConsent(analytics));
@@ -23,20 +25,22 @@ export function CookieBanner({
   };
   if (consent && !reopen) return null;
   return (
-    <aside className="cookie-banner" aria-label="Настройки cookies">
+    <aside className="cookie-banner" aria-label={t("Настройки cookies")}>
       <div>
-        <strong>Ваш комфорт — ваш выбор</strong>
+        <strong>{t("Ваш комфорт — ваш выбор")}</strong>
         <p>
-          Сохраняем выбранный регион и настройки. Аналитические cookies — только
-          с вашего согласия. <Link to="/legal/cookies">Подробнее</Link>
+          {t(
+            "Сохраняем выбранный регион и настройки. Аналитические cookies — только с вашего согласия.",
+          )}{" "}
+          <Link to="/legal/cookies">{t("Подробнее")}</Link>
         </p>
       </div>
       <div className="cookie-actions">
         <button className="button outline" onClick={() => accept(false)}>
-          Только необходимые
+          {t("Только необходимые")}
         </button>
         <button className="button" onClick={() => accept(true)}>
-          Принять все
+          {t("Принять все")}
         </button>
       </div>
     </aside>
@@ -50,6 +54,7 @@ export function RegionDialog({
   onClose: () => void;
   onSelect: (city: string) => void;
 }) {
+  const { t } = useTranslation();
   const [query, setQuery] = useState("");
   const [agreed, setAgreed] = useState(false);
   const [message, setMessage] = useState("");
@@ -79,25 +84,29 @@ export function RegionDialog({
     );
   };
   return (
-    <Dialog title="Выберите ваш город" onClose={onClose}>
-      <p className="muted">Покажем регион для доставки и консультации.</p>
+    <Dialog title={t("Выберите ваш город")} onClose={onClose}>
+      <p className="muted">
+        {t("Покажем регион для доставки и консультации.")}
+      </p>
       <label>
-        Найти город
+        {t("Найти город")}
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Название города"
+          placeholder={t("Название города")}
         />
       </label>
       <div className="city-list">
         {cities
           .filter((city) =>
-            city.name.toLowerCase().includes(query.toLowerCase()),
+            `${city.name} ${t(city.name)}`
+              .toLowerCase()
+              .includes(query.toLowerCase()),
           )
           .map((city) => (
             <button key={city.name} onClick={() => onSelect(city.name)}>
               <MapPin size={16} />
-              {city.name}
+              {t(city.name)}
             </button>
           ))}
       </div>
@@ -108,12 +117,13 @@ export function RegionDialog({
           onChange={(e) => setAgreed(e.target.checked)}
         />
         <span>
-          Принимаю{" "}
+          {t("Принимаю")}{" "}
           <Link to="/legal/terms" target="_blank">
-            пользовательское соглашение
+            {t("пользовательское соглашение")}
           </Link>{" "}
-          и разрешаю однократно определить город. Координаты обрабатываются в
-          браузере и не отправляются на сервер.
+          {t(
+            "и разрешаю однократно определить город. Координаты обрабатываются в браузере и не отправляются на сервер.",
+          )}
         </span>
       </label>
       <button
@@ -122,9 +132,9 @@ export function RegionDialog({
         onClick={locate}
       >
         <LocateFixed size={17} />
-        {locating ? "Определяем…" : "Определить мой город"}
+        {t(locating ? "Определяем…" : "Определить мой город")}
       </button>
-      <p role="status">{message}</p>
+      <p role="status">{t(message)}</p>
     </Dialog>
   );
 }

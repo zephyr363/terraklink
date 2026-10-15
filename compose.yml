@@ -45,6 +45,9 @@ services:
       retries: 10
     restart: unless-stopped
   web:
+    environment:
+      MAX_IMAGE_UPLOAD_MB: ${MAX_IMAGE_UPLOAD_MB:-10}
+      MAX_VIDEO_UPLOAD_MB: ${MAX_VIDEO_UPLOAD_MB:-50}
     build:
       context: .
       dockerfile: frontend/Dockerfile

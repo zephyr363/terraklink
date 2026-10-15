@@ -36,6 +36,7 @@ export interface Section {
   items: ContentItem[];
 }
 export interface SiteDocument {
+  translations?: { kk?: Pick<SiteDocument, "company" | "sections"> };
   theme: { accent: string; font: Font };
   company: {
     name: string;

@@ -1,3 +1,4 @@
+import { useTranslation } from "../i18n";
 import { useEffect, useRef, type ReactNode } from "react";
 import { X } from "lucide-react";
 
@@ -11,6 +12,7 @@ export function Dialog({
   onClose: () => void;
   children: ReactNode;
 }) {
+  const { t } = useTranslation();
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const element = ref.current;
@@ -31,7 +33,7 @@ export function Dialog({
         <button
           className="icon-button"
           onClick={onClose}
-          aria-label="Закрыть окно"
+          aria-label={t("Закрыть окно")}
         >
           <X size={22} />
         </button>
