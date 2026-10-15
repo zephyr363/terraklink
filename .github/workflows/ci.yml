@@ -45,6 +45,11 @@ jobs:
         working-directory: frontend
       - run: npm run build && npm test && npm audit --audit-level=high
         working-directory: frontend
+      - name: Verify nginx image and configurable upload limit
+        run: |
+          docker build -f frontend/Dockerfile -t terraklink-web:ci .
+          docker run --rm --add-host backend:127.0.0.1 --add-host minio:127.0.0.1 -e MAX_IMAGE_UPLOAD_MB=4 -e MAX_VIDEO_UPLOAD_MB=8 terraklink-web:ci nginx -T 2>&1 | tee /tmp/nginx-config.txt
+          grep -F 'client_max_body_size 9m;' /tmp/nginx-config.txt
       - run: npx playwright install --with-deps chromium
         working-directory: frontend
       - run: |

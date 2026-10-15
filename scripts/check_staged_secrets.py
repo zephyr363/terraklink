@@ -8,8 +8,9 @@ root = Path(__file__).resolve().parent.parent
 staged = subprocess.check_output(["git", "diff", "--cached", "--name-only", "-z"], cwd=root)
 paths = [path.decode("utf-8") for path in staged.split(b"\0") if path]
 secrets = []
-env_file = root / ".env"
-if env_file.exists():
+for env_file in root.glob(".env*"):
+    if not env_file.is_file() or env_file.name.endswith(".example"):
+        continue
     for line in env_file.read_text(encoding="utf-8").splitlines():
         if "=" in line and not line.lstrip().startswith("#"):
             key, value = line.split("=", 1)
