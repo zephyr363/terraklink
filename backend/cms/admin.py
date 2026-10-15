@@ -1,10 +1,28 @@
+from django import forms
 from django.contrib import admin
 
 from .models import ContentRevision, Lead, MediaAsset, SiteContent
+from .validators import validate_phone
+
+admin.site.site_header = "TerraKlink Admin"
+admin.site.site_title = "TerraKlink Admin"
+admin.site.index_title = "Управление сайтом"
+
+
+class LeadAdminForm(forms.ModelForm):
+    class Meta:
+        model = Lead
+        fields = "__all__"
+
+    def clean_phone(self):
+        value = self.cleaned_data["phone"]
+        validate_phone(value)
+        return value
 
 
 @admin.register(Lead)
 class LeadAdmin(admin.ModelAdmin):
+    form = LeadAdminForm
     list_display = ["name", "phone", "region", "status", "created_at"]
     list_filter = ["status", "created_at"]
     search_fields = ["name", "phone"]

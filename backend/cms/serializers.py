@@ -6,18 +6,36 @@ from urllib.parse import urlparse
 from rest_framework import serializers
 
 from .models import Lead
+from .validators import validate_phone
 
 
 def validate_media_url(value):
     if not value:
         return value
-    parsed = urlparse(value)
+    if "\\" in value or any(ord(char) < 32 for char in value):
+        raise serializers.ValidationError("Недопустимые символы в ссылке.")
+    try:
+        parsed = urlparse(value)
+        hostname = parsed.hostname
+        parsed.port
+    except ValueError:
+        raise serializers.ValidationError("Некорректная ссылка.") from None
     if value.startswith("/") and not value.startswith("//"):
         return value
-    if parsed.scheme == "https" and parsed.hostname and not parsed.username:
+    if (
+        parsed.scheme == "https"
+        and hostname
+        and parsed.username is None
+        and parsed.password is None
+    ):
         return value
     # Local S3 URLs are emitted by the development storage, never arbitrary HTTP hosts.
-    if parsed.scheme == "http" and parsed.hostname in {"localhost", "127.0.0.1"}:
+    if (
+        parsed.scheme == "http"
+        and hostname in {"localhost", "127.0.0.1"}
+        and parsed.username is None
+        and parsed.password is None
+    ):
         return value
     raise serializers.ValidationError("Используйте HTTPS-ссылку или локальный путь.")
 
@@ -86,14 +104,13 @@ class ThemeSerializer(serializers.Serializer):
 
 class CompanySerializer(serializers.Serializer):
     name = serializers.CharField(max_length=100)
-    phone = serializers.CharField(max_length=50)
+    phone = serializers.CharField(max_length=50, validators=[validate_phone])
     email = serializers.EmailField()
     address = serializers.CharField(max_length=300)
     demo = serializers.BooleanField()
 
 
-class DocumentSerializer(serializers.Serializer):
-    theme = ThemeSerializer()
+class LocalizedContentSerializer(serializers.Serializer):
     company = CompanySerializer()
     sections = SectionSerializer(many=True)
 
@@ -103,6 +120,20 @@ class DocumentSerializer(serializers.Serializer):
         if len({s["id"] for s in value}) != len(value):
             raise serializers.ValidationError("ID секций должны быть уникальны.")
         return value
+
+
+class TranslationsSerializer(serializers.Serializer):
+    kk = LocalizedContentSerializer(required=False)
+
+    def to_internal_value(self, data):
+        if not isinstance(data, dict) or set(data) - {"kk"}:
+            raise serializers.ValidationError("Поддерживается перевод kk; русский — основной язык.")
+        return super().to_internal_value(data)
+
+
+class DocumentSerializer(LocalizedContentSerializer):
+    theme = ThemeSerializer()
+    translations = TranslationsSerializer(required=False)
 
 
 class SaveSerializer(serializers.Serializer):

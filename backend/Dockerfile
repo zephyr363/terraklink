@@ -6,7 +6,8 @@ ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy PYTHONUNBUFFERED=1
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev
 COPY backend ./backend
-RUN mkdir -p /app/backend/staticfiles && useradd --create-home app && chown -R app:app /app
+RUN mkdir -p /app/backend/staticfiles && useradd --create-home app \
+    && chown app:app /app/backend/staticfiles
 USER app
 WORKDIR /app/backend
 ENV PATH="/app/.venv/bin:$PATH"
