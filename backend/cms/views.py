@@ -29,6 +29,22 @@ def health(request):
     return JsonResponse({"status": "ok"})
 
 
+class PublicConfigView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def get(self, request):
+        return Response(
+            {
+                "languages": ["ru", "kk"],
+                "upload_limits": {
+                    "image_mb": settings.MAX_IMAGE_UPLOAD_MB,
+                    "video_mb": settings.MAX_VIDEO_UPLOAD_MB,
+                },
+            }
+        )
+
+
 @ensure_csrf_cookie
 def csrf(request):
     return JsonResponse({"csrfToken": get_token(request)})
@@ -167,13 +183,15 @@ class UploadView(APIView):
 
     def post(self, request):
         file = request.FILES.get("file")
-        if not file or file.size > 50 * 1024 * 1024:
-            raise serializers.ValidationError("Выберите файл размером до 50 МБ.")
+        if not file:
+            raise serializers.ValidationError("Выберите файл для загрузки.")
         extension = Path(file.name).suffix.lower()
         kind = "image"
         if extension in {".jpg", ".jpeg", ".png", ".webp"}:
-            if file.size > 10 * 1024 * 1024:
-                raise serializers.ValidationError("Изображение должно быть не больше 10 МБ.")
+            if file.size > settings.MAX_IMAGE_UPLOAD_MB * 1024 * 1024:
+                raise serializers.ValidationError(
+                    f"Изображение должно быть не больше {settings.MAX_IMAGE_UPLOAD_MB} МБ."
+                )
             try:
                 image = Image.open(file)
                 if image.width * image.height > 40_000_000:
@@ -185,6 +203,10 @@ class UploadView(APIView):
                 raise serializers.ValidationError("Повреждённое изображение.")
         elif extension in {".mp4", ".webm"}:
             kind = "video"
+            if file.size > settings.MAX_VIDEO_UPLOAD_MB * 1024 * 1024:
+                raise serializers.ValidationError(
+                    f"Видео должно быть не больше {settings.MAX_VIDEO_UPLOAD_MB} МБ."
+                )
             header = file.read(32)
             if not (
                 (extension == ".mp4" and header[4:8] == b"ftyp")

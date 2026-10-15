@@ -1,7 +1,12 @@
+import { useTranslation } from "../i18n";
 import { useState, type CSSProperties } from "react";
 import { ArrowRight, ChevronLeft, ChevronRight, Check } from "lucide-react";
 import type { ContentItem, Section } from "../domain/content";
 import { LeadForm } from "./LeadForm";
+import { ProductGallery } from "./ProductGallery";
+import { ProductPrice } from "./ProductPrice";
+import { activePromo } from "../domain/products";
+import { LocalizedLink as Link } from "../i18n/navigation";
 
 export function ProductCard({
   item,
@@ -10,34 +15,29 @@ export function ProductCard({
   item: ContentItem;
   onSelect: (item: ContentItem) => void;
 }) {
+  const { t } = useTranslation();
+  const promo = activePromo(item);
   return (
     <article className="product-card">
-      {item.tag && <span className="product-tag">{item.tag}</span>}
-      <button
-        className="product-image"
-        onClick={() => onSelect(item)}
-        aria-label={`Подробнее: ${item.title}`}
-      >
-        <img src={item.image} alt={item.title} loading="lazy" />
-      </button>
+      {(promo?.label || item.tag) && (
+        <span className="product-tag">{promo?.label || item.tag}</span>
+      )}
+      <ProductGallery item={item} compact onOpen={() => onSelect(item)} />
       <div className="product-body">
         <span className="eyebrow">{item.category}</span>
-        <button
-          className="text-button product-title"
-          onClick={() => onSelect(item)}
-        >
+        <Link to={`/catalog/${item.id}`} className="text-button product-title">
           {item.title}
-        </button>
-        <p className="product-code">Артикул: {item.id.toUpperCase()}</p>
+        </Link>
+        <p className="product-code">
+          {t("Артикул:")} {item.id.toUpperCase()}
+        </p>
         <div className="product-bottom">
-          <strong>
-            {Number(item.price).toLocaleString("ru-RU")} ₸ <small>/ шт.</small>
-          </strong>
+          <ProductPrice item={item} />
           <button
             className="button outline small"
             onClick={() => onSelect(item)}
           >
-            Заказать
+            {t("Заказать")}
           </button>
         </div>
       </div>
@@ -46,13 +46,14 @@ export function ProductCard({
 }
 
 function Hero({ section }: { section: Section }) {
+  const { t } = useTranslation();
   const [index, setIndex] = useState(0);
   const slides = section.items.length
     ? section.items
     : [{ image: section.image, title: section.title }];
   const current = slides[index % slides.length];
   return (
-    <div className="hero" aria-roledescription="карусель">
+    <div className="hero" aria-roledescription={t("карусель")}>
       {section.video ? (
         <video
           className="hero-image"
@@ -78,7 +79,7 @@ function Hero({ section }: { section: Section }) {
         <div className="hero-caption">
           <p>{section.subtitle}</p>
           <a className="button" href="/catalog">
-            Перейти в каталог
+            {t("Перейти в каталог")}
             <ArrowRight size={18} />
           </a>
         </div>
@@ -90,14 +91,14 @@ function Hero({ section }: { section: Section }) {
             onClick={() =>
               setIndex((index + slides.length - 1) % slides.length)
             }
-            aria-label="Предыдущий баннер"
+            aria-label={t("Предыдущий баннер")}
           >
             <ChevronLeft />
           </button>
           <button
             className="hero-arrow next"
             onClick={() => setIndex((index + 1) % slides.length)}
-            aria-label="Следующий баннер"
+            aria-label={t("Следующий баннер")}
           >
             <ChevronRight />
           </button>
@@ -107,7 +108,7 @@ function Hero({ section }: { section: Section }) {
                 key={i}
                 className={i === index ? "active" : ""}
                 onClick={() => setIndex(i)}
-                aria-label={`Баннер ${i + 1}`}
+                aria-label={`${t("Баннер")} ${i + 1}`}
                 aria-pressed={i === index}
               />
             ))}
@@ -162,6 +163,7 @@ export function SectionRenderer({
   onProject: (item: ContentItem) => void;
   preview?: boolean;
 }) {
+  const { t } = useTranslation();
   const style: CSSProperties = {
     color: section.color,
     backgroundColor: section.background,
@@ -219,11 +221,13 @@ export function SectionRenderer({
                     : "/information"
               }
             >
-              {section.type === "catalog"
-                ? "Перейти в каталог"
-                : section.type === "projects"
-                  ? "Все проекты"
-                  : "Все статьи"}
+              {t(
+                section.type === "catalog"
+                  ? "Перейти в каталог"
+                  : section.type === "projects"
+                    ? "Все проекты"
+                    : "Все статьи",
+              )}
               <ArrowRight size={15} />
             </a>
           </div>
@@ -274,12 +278,12 @@ export function SectionRenderer({
               </ul>
             </div>
             <div className="consultation-form">
-              <h3>Поможем с выбором</h3>
-              <p className="muted">Оставьте номер для консультации</p>
+              <h3>{t("Поможем с выбором")}</h3>
+              <p className="muted">{t("Оставьте номер для консультации")}</p>
               <LeadForm
                 preview={preview}
                 region={region}
-                subject="Консультация по подбору кирпича"
+                subject={t("Консультация по подбору кирпича")}
               />
             </div>
           </div>
@@ -288,11 +292,11 @@ export function SectionRenderer({
           <div className="about-grid">
             <SectionMedia section={section} className="" />
             <div>
-              <span className="eyebrow accent">О компании</span>
+              <span className="eyebrow accent">{t("О компании")}</span>
               <h2>{section.title}</h2>
               <p className="multiline">{section.subtitle}</p>
               <a href="/catalog" className="button">
-                Перейти в каталог
+                {t("Перейти в каталог")}
                 <ArrowRight size={17} />
               </a>
             </div>
@@ -305,7 +309,7 @@ export function SectionRenderer({
               <p>{section.subtitle}</p>
             </div>
             <a className="button" href="/contacts">
-              Связаться с нами
+              {t("Связаться с нами")}
               <ArrowRight size={18} />
             </a>
           </div>

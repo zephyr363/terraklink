@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type SetStateAction,
+} from "react";
 import { useDispatch } from "react-redux";
 import { Link } from "react-router-dom";
 import {
@@ -32,6 +38,7 @@ import {
   usePublishMutation,
   useSaveMutation,
   useUploadMutation,
+  useConfigQuery,
 } from "../store/api";
 import {
   moveSection,
@@ -44,6 +51,15 @@ import {
   type SiteDocument,
 } from "../domain/content";
 import { PublicSite } from "./PublicSite";
+import { validateDocument } from "../domain/validation";
+import { ProductEditor } from "../components/ProductEditor";
+import { SeoEditor } from "../components/SeoEditor";
+import { productImages, withProductImages } from "../domain/products";
+import {
+  localizedDocument,
+  withLocalizedDocument,
+  type Language,
+} from "../i18n";
 
 const sectionNames: Record<SectionType, string> = {
   hero: "Главный баннер",
@@ -83,7 +99,7 @@ function Login({ onSuccess }: { onSuccess: () => void }) {
     <div className="admin-login">
       <div className="login-card">
         <Blocks className="accent" size={40} />
-        <span className="eyebrow">TERRAKLINK · УПРАВЛЕНИЕ САЙТОМ</span>
+        <span className="eyebrow">TerraKlink Admin</span>
         <h1>Вход для редактора</h1>
         <p className="muted">Редактируйте содержание и оформление страниц.</p>
         <form onSubmit={submit}>
@@ -123,7 +139,7 @@ function LeadsPanel() {
       <h2>Заявки с сайта</h2>
       <p className="muted">
         Последние 200 заявок. Изменить статус можно в{" "}
-        <a href="/django-admin/cms/lead/">Django Admin</a>.
+        <a href="/django-admin/cms/lead/">TerraKlink Admin</a>.
       </p>
       {isLoading && <p>Загружаем заявки…</p>}
       {isError && <p className="error">Не удалось загрузить заявки.</p>}
@@ -171,11 +187,18 @@ function SectionEditor({
   onChange,
   onUpload,
   uploading,
+  uploadLimits,
 }: {
   section: Section;
   onChange: (patch: Partial<Section>) => void;
-  onUpload: (file: File, target: "image" | "video", itemIndex?: number) => void;
+  onUpload: (
+    file: File,
+    target: "image" | "video",
+    itemIndex?: number,
+    imageId?: string,
+  ) => void;
   uploading: boolean;
+  uploadLimits?: { image_mb: number; video_mb: number };
 }) {
   const patchItem = (index: number, patch: Partial<ContentItem>) =>
     onChange({
@@ -276,13 +299,16 @@ function SectionEditor({
           Ссылка на изображение
           <input
             value={section.image}
+            maxLength={1000}
             onChange={(e) => onChange({ image: e.target.value })}
             placeholder="/media/… или https://…"
           />
         </label>
         <label className="upload-label">
           <Upload size={17} />
-          {uploading ? "Загружаем…" : "Загрузить фото (до 10 МБ)"}
+          {uploading
+            ? "Загружаем…"
+            : `Загрузить фото (до ${uploadLimits?.image_mb ?? "…"} МБ)`}
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp"
@@ -298,12 +324,13 @@ function SectionEditor({
           Ссылка на видео
           <input
             value={section.video}
+            maxLength={1000}
             onChange={(e) => onChange({ video: e.target.value })}
           />
         </label>
         <label className="upload-label">
           <Upload size={17} />
-          Загрузить видео (до 50 МБ)
+          {`Загрузить видео (до ${uploadLimits?.video_mb ?? "…"} МБ)`}
           <input
             type="file"
             accept="video/mp4,video/webm"
@@ -355,27 +382,43 @@ function SectionEditor({
                   onChange={(e) => patchItem(index, { text: e.target.value })}
                 />
               </label>
-              <label>
-                Изображение
-                <input
-                  value={item.image}
-                  onChange={(e) => patchItem(index, { image: e.target.value })}
+              {section.type === "catalog" ? (
+                <ProductEditor
+                  item={item}
+                  onChange={(patch) => patchItem(index, patch)}
+                  onUpload={(file, imageId) =>
+                    onUpload(file, "image", index, imageId)
+                  }
+                  uploading={uploading}
                 />
-              </label>
-              <label className="upload-label">
-                <Image size={17} />
-                Загрузить изображение
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  disabled={uploading}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) onUpload(file, "image", index);
-                    e.target.value = "";
-                  }}
-                />
-              </label>
+              ) : (
+                <>
+                  <label>
+                    Изображение
+                    <input
+                      value={item.image}
+                      maxLength={1000}
+                      onChange={(e) =>
+                        patchItem(index, { image: e.target.value })
+                      }
+                    />
+                  </label>
+                  <label className="upload-label">
+                    <Image size={17} />
+                    Загрузить изображение
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      disabled={uploading}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) onUpload(file, "image", index);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                </>
+              )}
               <div className="editor-fields">
                 <label>
                   Категория
@@ -426,6 +469,7 @@ function SectionEditor({
           ))}
           <button
             className="button outline"
+            disabled={section.items.length >= 100}
             onClick={() =>
               onChange({
                 items: [
@@ -453,6 +497,17 @@ function SectionEditor({
 }
 
 export function Admin() {
+  useEffect(() => {
+    window.document.title = "TerraKlink Admin";
+    const robots = window.document.head.querySelector<HTMLMetaElement>(
+      'meta[name="robots"]',
+    );
+    if (robots) robots.content = "noindex, nofollow";
+    window.document.head
+      .querySelectorAll('link[rel="canonical"], link[hreflang], #site-schema')
+      .forEach((element) => element.remove());
+  }, []);
+  const { data: config } = useConfigQuery();
   const dispatch = useDispatch();
   const [loggedIn, setLoggedIn] = useState(false);
   const {
@@ -460,7 +515,22 @@ export function Admin() {
     error: draftError,
     refetch,
   } = useDraftQuery(undefined, { skip: !loggedIn });
-  const [document, setDocument] = useState<SiteDocument | null>(null);
+  const [siteDocument, setSiteDocument] = useState<SiteDocument | null>(null);
+  const [editingLanguage, setEditingLanguage] = useState<Language>("ru");
+  const document = siteDocument
+    ? localizedDocument(siteDocument, editingLanguage)
+    : null;
+  const setDocument = (next: SetStateAction<SiteDocument | null>) => {
+    setSiteDocument((current) => {
+      const localized = current
+        ? localizedDocument(current, editingLanguage)
+        : null;
+      const value = typeof next === "function" ? next(localized) : next;
+      return current && value
+        ? withLocalizedDocument(current, value, editingLanguage)
+        : value;
+    });
+  };
   const [revision, setRevision] = useState(0);
   const [publishedRevision, setPublishedRevision] = useState(0);
   const [selectedId, setSelectedId] = useState("hero");
@@ -479,7 +549,7 @@ export function Admin() {
   useEffect(() => {
     // Cached snapshots can arrive after a save; never roll the editor back.
     if (data && data.revision > lastServerRevision.current && !dirty) {
-      setDocument(structuredClone(data.document));
+      setSiteDocument(structuredClone(data.document));
       setRevision(data.revision);
       setPublishedRevision(data.published_revision ?? 0);
       lastServerRevision.current = data.revision;
@@ -547,8 +617,10 @@ export function Admin() {
     });
   const saveDraft = async () => {
     setFailure("");
-    const result = await save({ revision, document }).unwrap();
-    setDocument(structuredClone(result.document));
+    const errors = validateDocument(siteDocument!);
+    if (errors.length) throw { status: 400, data: errors };
+    const result = await save({ revision, document: siteDocument! }).unwrap();
+    setSiteDocument(structuredClone(result.document));
     setRevision(result.revision);
     setPublishedRevision(result.published_revision ?? 0);
     setDirty(false);
@@ -565,6 +637,8 @@ export function Admin() {
   };
   const publishClick = async () => {
     try {
+      const errors = validateDocument(siteDocument!);
+      if (errors.length) throw { status: 400, data: errors };
       const current = dirty ? await saveDraft() : revision;
       const result = await publish({ revision: current }).unwrap();
       setRevision(result.revision);
@@ -579,14 +653,24 @@ export function Admin() {
     file: File,
     target: "image" | "video",
     itemIndex?: number,
+    imageId?: string,
   ) => {
     if (!selected) return;
-    const maxSize = target === "image" ? 10 : 50;
+    if (!config) {
+      setFailure(
+        "Не удалось загрузить ограничения загрузки. Обновите страницу.",
+      );
+      return;
+    }
+    const maxSize =
+      config.upload_limits[target === "image" ? "image_mb" : "video_mb"];
     if (file.size > maxSize * 1024 * 1024) {
       setFailure(`Файл должен быть не больше ${maxSize} МБ.`);
       return;
     }
     const id = selected.id;
+    const itemId =
+      itemIndex === undefined ? undefined : selected.items[itemIndex]?.id;
     const body = new FormData();
     body.append("file", file);
     try {
@@ -602,8 +686,19 @@ export function Admin() {
               : itemIndex === undefined
                 ? patchSectionContent(section, { [target]: result.url })
                 : patchSectionContent(section, {
-                    items: section.items.map((item, i) =>
-                      i === itemIndex ? { ...item, image: result.url } : item,
+                    items: section.items.map((item) =>
+                      item.id !== itemId
+                        ? item
+                        : imageId
+                          ? withProductImages(
+                              item,
+                              productImages(item).map((image) =>
+                                image.id === imageId
+                                  ? { ...image, url: result.url }
+                                  : image,
+                              ),
+                            )
+                          : { ...item, image: result.url },
                     ),
                   }),
           ),
@@ -628,7 +723,7 @@ export function Admin() {
       <aside className="admin-sidebar">
         <Link className="admin-brand" to="/">
           <Blocks size={30} />
-          <strong>TERRAKLINK</strong>
+          <strong>TerraKlink Admin</strong>
         </Link>
         <div className="admin-caption">ПАНЕЛЬ УПРАВЛЕНИЯ</div>
         <button
@@ -668,6 +763,7 @@ export function Admin() {
               dispatch(contentApi.util.resetApiState());
               setLoggedIn(false);
               setDocument(null);
+              setEditingLanguage("ru");
               setDirty(false);
               setPreview(false);
               setNotice("");
@@ -695,6 +791,35 @@ export function Admin() {
             </h1>
           </div>
           <div className="toolbar-actions">
+            <label className="editor-language">
+              Язык контента
+              <select
+                value={editingLanguage}
+                disabled={busy}
+                onChange={(event) => {
+                  const language = event.target.value as Language;
+                  if (language === "kk" && !siteDocument?.translations?.kk) {
+                    setSiteDocument((current) =>
+                      current
+                        ? withLocalizedDocument(
+                            current,
+                            localizedDocument(current, "kk"),
+                            "kk",
+                          )
+                        : current,
+                    );
+                    setDirty(true);
+                    setNotice(
+                      "Создан казахский черновик. Проверьте перевод и изображения перед публикацией.",
+                    );
+                  }
+                  setEditingLanguage(language);
+                }}
+              >
+                <option value="ru">Русский</option>
+                <option value="kk">Қазақша</option>
+              </select>
+            </label>
             <span className={`save-status ${dirty ? "unsaved" : ""}`}>
               <span />
               {dirty ? "Есть изменения" : "Сохранено"}
@@ -741,7 +866,7 @@ export function Admin() {
                   try {
                     // Only replace local edits after the server returned a fresh snapshot.
                     const result = await refetch().unwrap();
-                    setDocument(structuredClone(result.document));
+                    setSiteDocument(structuredClone(result.document));
                     setRevision(result.revision);
                     setPublishedRevision(result.published_revision ?? 0);
                     lastServerRevision.current = result.revision;
@@ -764,7 +889,10 @@ export function Admin() {
               <div className="preview-label">
                 Предпросмотр текущего черновика
               </div>
-              <PublicSite previewDocument={document} />
+              <PublicSite
+                previewDocument={siteDocument!}
+                previewLanguage={editingLanguage}
+              />
             </div>
           ) : tab === "leads" ? (
             <LeadsPanel />
@@ -812,6 +940,16 @@ export function Admin() {
                     {["Название", "Телефон", "Email", "Адрес"][i]}
                     <input
                       type={key === "email" ? "email" : "text"}
+                      required
+                      maxLength={
+                        key === "address"
+                          ? 300
+                          : key === "phone"
+                            ? 50
+                            : key === "email"
+                              ? 254
+                              : 100
+                      }
                       value={document.company[key]}
                       onChange={(e) =>
                         edit({
@@ -843,6 +981,11 @@ export function Admin() {
                 Перед отключением отметки замените контакты, баннеры и
                 материалы, утвердите юридические документы.
               </p>
+              <SeoEditor
+                value={document.seo ?? {}}
+                shared={editingLanguage === "ru"}
+                onChange={(seo) => edit({ ...document, seo })}
+              />
             </div>
           ) : (
             <div className="editor-layout">
@@ -943,6 +1086,7 @@ export function Admin() {
               <div>
                 {selected && (
                   <SectionEditor
+                    uploadLimits={config?.upload_limits}
                     section={selected}
                     onChange={(patch) => patchSection(selected.id, patch)}
                     onUpload={uploadFile}

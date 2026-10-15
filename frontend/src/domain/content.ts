@@ -11,7 +11,47 @@ export type SectionType =
   | "image"
   | "video";
 export type Font = "Open Sans" | "Arial" | "Georgia";
+export interface ProductImage {
+  id: string;
+  url: string;
+  alt: string;
+}
+export interface Promotion {
+  enabled: boolean;
+  label: string;
+  text: string;
+  price: number | string | null;
+  starts_on?: string | null;
+  ends_on?: string | null;
+}
+export interface SeoSettings {
+  title?: string;
+  description?: string;
+  site_url?: string;
+  indexing?: boolean;
+  structured_data?: boolean;
+  ai_enabled?: boolean;
+  ai_summary?: string;
+  og_image?: string;
+  logo?: string;
+  legal_name?: string;
+  city?: string;
+  region?: string;
+  postal_code?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  areas_served?: string[];
+  same_as?: string[];
+  faq?: { question: string; answer: string }[];
+  pages?: Record<string, { title?: string; description?: string }>;
+  google_verification?: string;
+  yandex_verification?: string;
+}
 export interface ContentItem {
+  images?: ProductImage[];
+  promo?: Promotion | null;
+  seo_title?: string;
+  seo_description?: string;
   id: string;
   title: string;
   text: string;
@@ -36,6 +76,8 @@ export interface Section {
   items: ContentItem[];
 }
 export interface SiteDocument {
+  seo?: SeoSettings;
+  translations?: { kk?: Pick<SiteDocument, "company" | "sections" | "seo"> };
   theme: { accent: string; font: Font };
   company: {
     name: string;

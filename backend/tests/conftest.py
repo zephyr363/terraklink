@@ -13,6 +13,16 @@ def reset_throttle_cache():
     cache.clear()
 
 
+@pytest.fixture(autouse=True)
+def isolated_media_storage(settings, tmp_path):
+    # Tests must never inherit a real S3 bucket from the surrounding Compose environment.
+    settings.MEDIA_ROOT = tmp_path
+    settings.STORAGES = {
+        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+        "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+    }
+
+
 @pytest.fixture
 def document():
     return json.loads(

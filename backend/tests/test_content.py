@@ -65,6 +65,10 @@ def test_non_staff_cannot_edit(site, api, django_user_model):
     "field,value",
     [
         ("image", "javascript:alert(1)"),
+        ("image", "https://["),
+        ("image", "https://site.example:wrong/image.png"),
+        ("image", "https://:pass@site.example/image.png"),
+        ("image", "/\\site.example/image.png"),
         ("video", "//evil.example/video.mp4"),
         ("background", "red;position:fixed"),
         ("font", "malicious font"),

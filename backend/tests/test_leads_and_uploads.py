@@ -55,6 +55,7 @@ def test_valid_image_stored_with_generated_name(editor_api, tmp_path, settings):
     asset = MediaAsset.objects.get()
     assert "example" not in asset.file.name and ".." not in asset.file.name
     assert result.data["kind"] == "image"
+    assert (tmp_path / asset.file.name).is_file()
 
 
 @pytest.mark.parametrize(

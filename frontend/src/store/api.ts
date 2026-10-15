@@ -65,6 +65,15 @@ export const contentApi = createApi({
   baseQuery: authenticatedQuery,
   tagTypes: ["Content", "Draft", "Leads"],
   endpoints: (builder) => ({
+    config: builder.query<
+      {
+        languages: string[];
+        upload_limits: { image_mb: number; video_mb: number };
+      },
+      void
+    >({
+      query: () => "config/",
+    }),
     publicContent: builder.query<ContentResponse, void>({
       query: () => "content/",
       providesTags: ["Content"],
@@ -109,6 +118,7 @@ export const contentApi = createApi({
   }),
 });
 export const {
+  useConfigQuery,
   usePublicContentQuery,
   useDraftQuery,
   useCsrfQuery,
@@ -145,6 +155,8 @@ export function errorMessage(error: unknown): string {
       return "Нет доступа. Проверьте логин, пароль и права редактора.";
     if (e.status === 429) return "Слишком много запросов. Попробуйте позже.";
     if (e.status === 413) return "Файл превышает допустимый размер загрузки.";
+    if (e.status === 503)
+      return "Сервис временно недоступен. Повторите позже; локальные правки сохранены.";
     if (e.status === 400)
       return (
         [...new Set(validationMessages(e.data))]

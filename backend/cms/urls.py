@@ -1,9 +1,12 @@
 from django.urls import path
 
 from . import views
+from .seo import seo_api
 
 urlpatterns = [
     path("health/", views.health),
+    path("config/", views.PublicConfigView.as_view()),
+    path("seo/", seo_api),
     path("auth/csrf/", views.csrf),
     path("auth/login/", views.LoginView.as_view()),
     path("auth/refresh/", views.RefreshView.as_view()),

@@ -441,3 +441,58 @@ test("logging out with unsaved changes does not prevent the next login from load
     originalDraft.sections[0].title,
   );
 });
+
+test("Kazakh edits are independent, invalid company fields never reach the API, and publication keeps both languages", async ({
+  page,
+  request,
+}) => {
+  const russianTitle = originalDraft.sections[0].title;
+  await page.getByLabel("Язык контента").selectOption("kk");
+  await page
+    .getByLabel("Заголовок", { exact: true })
+    .fill("Әкімші өзгерткен тақырып");
+  await save(page);
+  let saved = (await draft(request)).document;
+  expect(saved.sections[0].title).toBe(russianTitle);
+  expect(saved.translations?.kk?.sections[0].title).toBe(
+    "Әкімші өзгерткен тақырып",
+  );
+  await page.getByLabel("Язык контента").selectOption("ru");
+  await expect(page.getByLabel("Заголовок", { exact: true })).toHaveValue(
+    russianTitle,
+  );
+  await page.getByRole("button", { name: "Оформление и контакты" }).click();
+  await page.getByLabel("Телефон", { exact: true }).fill("123");
+  await page.getByLabel("Email", { exact: true }).fill("invalid");
+  let requests = 0;
+  page.on("request", (req) => {
+    if (req.method() === "PUT") requests++;
+  });
+  await page.getByRole("button", { name: "Сохранить", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText("Телефон");
+  expect(requests).toBe(0);
+  await page
+    .getByLabel("Телефон", { exact: true })
+    .fill(originalDraft.company.phone);
+  await page
+    .getByLabel("Email", { exact: true })
+    .fill(originalDraft.company.email);
+  await save(page);
+  await page.getByRole("button", { name: "Опубликовать", exact: true }).click();
+  await expect(
+    page.getByText("Изменения опубликованы на сайте."),
+  ).toBeVisible();
+  const publicPage = await page.context().newPage();
+  await publicPage.goto("/");
+  await publicPage
+    .getByRole("combobox", { name: "Язык сайта" })
+    .selectOption("kk");
+  await expect(publicPage.locator(".plant-title h1")).toHaveText(
+    "Әкімші өзгерткен тақырып",
+  );
+  await publicPage
+    .getByRole("combobox", { name: "Сайт тілі" })
+    .selectOption("ru");
+  await expect(publicPage.locator(".plant-title h1")).toHaveText(russianTitle);
+  await publicPage.close();
+});
