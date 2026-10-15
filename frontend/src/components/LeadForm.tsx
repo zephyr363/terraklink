@@ -7,15 +7,18 @@ import { CONSENT_VERSION } from "../domain/consent";
 export function LeadForm({
   region,
   subject = "",
+  preview = false,
 }: {
   region: string;
   subject?: string;
+  preview?: boolean;
 }) {
   const [send, { isLoading }] = useCreateLeadMutation();
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (preview) return;
     const data = new FormData(event.currentTarget);
     setError("");
     try {
@@ -87,7 +90,10 @@ export function LeadForm({
           .
         </span>
       </label>
-      <button className="button" disabled={isLoading}>
+      {preview && (
+        <p className="muted">Отправка заявок в предпросмотре отключена.</p>
+      )}
+      <button className="button" disabled={isLoading || preview}>
         {isLoading ? "Отправляем…" : "Отправить заявку"}
         <ArrowRight size={18} />
       </button>
