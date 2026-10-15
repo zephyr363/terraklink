@@ -1944,3 +1944,134 @@ th {
     transition: none !important;
   }
 }
+/* Gallery controls retain the reference card proportions and accent palette. */
+.product-gallery {
+  position: relative;
+  min-width: 0;
+  background: #f7f7f7;
+}
+.product-gallery > img,
+.product-gallery > .media-placeholder {
+  width: 100%;
+  height: 360px;
+  object-fit: contain;
+  display: block;
+}
+.product-gallery.compact > img,
+.product-gallery.compact > .media-placeholder {
+  height: 216px;
+  padding: 30px 25px 10px;
+  background: white;
+}
+.product-gallery > img {
+  filter: var(--media-filter, none);
+}
+.media-placeholder {
+  display: grid !important;
+  place-items: center;
+  color: #777;
+}
+.gallery-open {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.gallery-arrow {
+  position: absolute;
+  top: 40%;
+  z-index: 1;
+  border: 1px solid #ddd;
+  background: white;
+  color: #333;
+  padding: 6px;
+  display: flex;
+  cursor: pointer;
+}
+.gallery-arrow.previous {
+  left: 8px;
+}
+.gallery-arrow.next {
+  right: 8px;
+}
+.gallery-count {
+  position: absolute;
+  bottom: 8px;
+  right: 10px;
+  background: white;
+  padding: 2px 8px;
+  font-size: 12px;
+  pointer-events: none;
+}
+.gallery-thumbnails {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 12px;
+}
+.gallery-thumbnails button {
+  flex: 0 0 65px;
+  padding: 2px;
+  border: 2px solid transparent;
+  background: white;
+  cursor: pointer;
+}
+.gallery-thumbnails button[aria-pressed="true"] {
+  border-color: var(--accent);
+}
+.gallery-thumbnails img {
+  width: 100%;
+  height: 50px;
+  object-fit: contain;
+}
+.product-price del {
+  display: block;
+  font-size: 13px;
+  font-weight: 400;
+  color: #777;
+}
+.product-detail-page {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 45px;
+  padding-bottom: 65px;
+}
+.product-promo {
+  border-left: 3px solid var(--accent);
+  padding: 10px 20px;
+  background: #fff6ed;
+  margin: 18px 0;
+}
+.product-tag {
+  z-index: 2;
+  pointer-events: none;
+}
+.gallery-editor-row {
+  padding: 18px 0;
+  border-bottom: 1px solid #ddd;
+  margin-bottom: 18px;
+}
+.gallery-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.brand-facts details {
+  border-bottom: 1px solid #ddd;
+  padding: 18px 0;
+}
+.brand-facts summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+@media (max-width: 760px) {
+  .product-detail-page {
+    grid-template-columns: 1fr;
+    gap: 25px;
+  }
+  .product-gallery > img {
+    height: 280px;
+  }
+}

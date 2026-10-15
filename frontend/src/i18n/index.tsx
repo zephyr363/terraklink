@@ -16,6 +16,8 @@ export function useTranslation() {
 export function useSiteLanguage(previewLanguage?: Language) {
   const [language, setLanguage] = useState<Language>(() => {
     if (previewLanguage) return previewLanguage;
+    const requested = new URLSearchParams(window.location.search).get("lang");
+    if (requested === "kk" || requested === "ru") return requested;
     try {
       return localStorage.getItem("tk-language") === "kk" ? "kk" : "ru";
     } catch {
@@ -47,7 +49,12 @@ export function localizedDocument(
   language: Language,
 ): SiteDocument {
   if (language === "ru") return source;
-  if (source.translations?.kk) return { ...source, ...source.translations.kk };
+  if (source.translations?.kk)
+    return {
+      ...source,
+      ...source.translations.kk,
+      seo: { ...source.seo, ...source.translations.kk.seo },
+    };
   return {
     ...source,
     company: {
@@ -79,7 +86,11 @@ export function withLocalizedDocument(
     theme: next.theme,
     translations: {
       ...source.translations,
-      kk: { company: next.company, sections: next.sections },
+      kk: {
+        company: next.company,
+        sections: next.sections,
+        ...(next.seo ? { seo: next.seo } : {}),
+      },
     },
   };
 }

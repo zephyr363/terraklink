@@ -52,6 +52,9 @@ import {
 } from "../domain/content";
 import { PublicSite } from "./PublicSite";
 import { validateDocument } from "../domain/validation";
+import { ProductEditor } from "../components/ProductEditor";
+import { SeoEditor } from "../components/SeoEditor";
+import { productImages, withProductImages } from "../domain/products";
 import {
   localizedDocument,
   withLocalizedDocument,
@@ -188,7 +191,12 @@ function SectionEditor({
 }: {
   section: Section;
   onChange: (patch: Partial<Section>) => void;
-  onUpload: (file: File, target: "image" | "video", itemIndex?: number) => void;
+  onUpload: (
+    file: File,
+    target: "image" | "video",
+    itemIndex?: number,
+    imageId?: string,
+  ) => void;
   uploading: boolean;
   uploadLimits?: { image_mb: number; video_mb: number };
 }) {
@@ -374,28 +382,43 @@ function SectionEditor({
                   onChange={(e) => patchItem(index, { text: e.target.value })}
                 />
               </label>
-              <label>
-                Изображение
-                <input
-                  value={item.image}
-                  maxLength={1000}
-                  onChange={(e) => patchItem(index, { image: e.target.value })}
+              {section.type === "catalog" ? (
+                <ProductEditor
+                  item={item}
+                  onChange={(patch) => patchItem(index, patch)}
+                  onUpload={(file, imageId) =>
+                    onUpload(file, "image", index, imageId)
+                  }
+                  uploading={uploading}
                 />
-              </label>
-              <label className="upload-label">
-                <Image size={17} />
-                Загрузить изображение
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  disabled={uploading}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) onUpload(file, "image", index);
-                    e.target.value = "";
-                  }}
-                />
-              </label>
+              ) : (
+                <>
+                  <label>
+                    Изображение
+                    <input
+                      value={item.image}
+                      maxLength={1000}
+                      onChange={(e) =>
+                        patchItem(index, { image: e.target.value })
+                      }
+                    />
+                  </label>
+                  <label className="upload-label">
+                    <Image size={17} />
+                    Загрузить изображение
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      disabled={uploading}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) onUpload(file, "image", index);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                </>
+              )}
               <div className="editor-fields">
                 <label>
                   Категория
@@ -474,6 +497,16 @@ function SectionEditor({
 }
 
 export function Admin() {
+  useEffect(() => {
+    window.document.title = "TerraKlink Admin";
+    const robots = window.document.head.querySelector<HTMLMetaElement>(
+      'meta[name="robots"]',
+    );
+    if (robots) robots.content = "noindex, nofollow";
+    window.document.head
+      .querySelectorAll('link[rel="canonical"], link[hreflang], #site-schema')
+      .forEach((element) => element.remove());
+  }, []);
   const { data: config } = useConfigQuery();
   const dispatch = useDispatch();
   const [loggedIn, setLoggedIn] = useState(false);
@@ -620,6 +653,7 @@ export function Admin() {
     file: File,
     target: "image" | "video",
     itemIndex?: number,
+    imageId?: string,
   ) => {
     if (!selected) return;
     if (!config) {
@@ -635,6 +669,8 @@ export function Admin() {
       return;
     }
     const id = selected.id;
+    const itemId =
+      itemIndex === undefined ? undefined : selected.items[itemIndex]?.id;
     const body = new FormData();
     body.append("file", file);
     try {
@@ -650,8 +686,19 @@ export function Admin() {
               : itemIndex === undefined
                 ? patchSectionContent(section, { [target]: result.url })
                 : patchSectionContent(section, {
-                    items: section.items.map((item, i) =>
-                      i === itemIndex ? { ...item, image: result.url } : item,
+                    items: section.items.map((item) =>
+                      item.id !== itemId
+                        ? item
+                        : imageId
+                          ? withProductImages(
+                              item,
+                              productImages(item).map((image) =>
+                                image.id === imageId
+                                  ? { ...image, url: result.url }
+                                  : image,
+                              ),
+                            )
+                          : { ...item, image: result.url },
                     ),
                   }),
           ),
@@ -934,6 +981,11 @@ export function Admin() {
                 Перед отключением отметки замените контакты, баннеры и
                 материалы, утвердите юридические документы.
               </p>
+              <SeoEditor
+                value={document.seo ?? {}}
+                shared={editingLanguage === "ru"}
+                onChange={(seo) => edit({ ...document, seo })}
+              />
             </div>
           ) : (
             <div className="editor-layout">

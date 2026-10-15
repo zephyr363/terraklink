@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="{{ meta.language }}">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ meta.title }}</title>
+  <meta name="description" content="{{ meta.description }}"><meta name="robots" content="{{ meta.robots }}">
+  <link rel="canonical" href="{{ meta.canonical }}">
+  {% for alternate in meta.alternates %}<link rel="alternate" hreflang="{{ alternate.lang }}" href="{{ alternate.url }}">{% endfor %}
+  <meta property="og:title" content="{{ meta.title }}"><meta property="og:description" content="{{ meta.description }}">
+  <meta property="og:url" content="{{ meta.canonical }}"><meta property="og:type" content="{% if product %}product{% else %}website{% endif %}">
+  {% if meta.image %}<meta property="og:image" content="{{ meta.image }}">{% endif %}
+  <meta name="twitter:card" content="summary_large_image">
+  {% if meta.google_verification %}<meta name="google-site-verification" content="{{ meta.google_verification }}">{% endif %}
+  {% if meta.yandex_verification %}<meta name="yandex-verification" content="{{ meta.yandex_verification }}">{% endif %}
+  <script id="site-schema" type="application/ld+json">{{ schema_json|safe }}</script>
+  <link rel="stylesheet" href="/assets/app.css"><script type="module" src="/assets/app.js"></script>
+</head>
+<body><div id="root"><main class="container content-section">
+  <a href="/">{{ company.name }}</a><h1>{{ meta.title }}</h1><p>{{ meta.description }}</p>
+  <p>{{ summary }}</p><p>{{ company.address }} · {{ company.phone }} · {{ company.email }}</p>
+  {% for section in sections %}<section><h2>{{ section.title }}</h2><p>{{ section.subtitle }}</p>{% for item in section.items %}<h3>{{ item.title }}</h3><p>{{ item.text }}</p>{% endfor %}</section>{% endfor %}
+  {% if product %}<p>{{ product.text }}</p><p>{% if promo.price != None %}{{ promo.price }}{% else %}{{ product.price }}{% endif %} ₸</p>{% if promo %}<h2>{{ promo.label }}</h2><p>{{ promo.text }}</p>{% endif %}{% for image in images %}<img class="custom-media" src="{{ image.url }}" alt="{{ image.alt }}">{% endfor %}{% endif %}
+  {% if products %}<ul>{% for item in products %}<li><a href="/catalog/{{ item.id }}{% if meta.language == 'kk' %}?lang=kk{% endif %}">{{ item.title }}</a> — {{ item.text }}</li>{% endfor %}</ul>{% endif %}
+  {% for row in faq %}<section><h2>{{ row.question }}</h2><p>{{ row.answer }}</p></section>{% endfor %}
+</main></div></body></html>

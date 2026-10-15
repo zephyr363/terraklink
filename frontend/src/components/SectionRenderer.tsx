@@ -3,6 +3,10 @@ import { useState, type CSSProperties } from "react";
 import { ArrowRight, ChevronLeft, ChevronRight, Check } from "lucide-react";
 import type { ContentItem, Section } from "../domain/content";
 import { LeadForm } from "./LeadForm";
+import { ProductGallery } from "./ProductGallery";
+import { ProductPrice } from "./ProductPrice";
+import { activePromo } from "../domain/products";
+import { LocalizedLink as Link } from "../i18n/navigation";
 
 export function ProductCard({
   item,
@@ -11,35 +15,24 @@ export function ProductCard({
   item: ContentItem;
   onSelect: (item: ContentItem) => void;
 }) {
-  const { t, language } = useTranslation();
+  const { t } = useTranslation();
+  const promo = activePromo(item);
   return (
     <article className="product-card">
-      {item.tag && <span className="product-tag">{item.tag}</span>}
-      <button
-        className="product-image"
-        onClick={() => onSelect(item)}
-        aria-label={`${t("Подробнее")}: ${item.title}`}
-      >
-        <img src={item.image} alt={item.title} loading="lazy" />
-      </button>
+      {(promo?.label || item.tag) && (
+        <span className="product-tag">{promo?.label || item.tag}</span>
+      )}
+      <ProductGallery item={item} compact onOpen={() => onSelect(item)} />
       <div className="product-body">
         <span className="eyebrow">{item.category}</span>
-        <button
-          className="text-button product-title"
-          onClick={() => onSelect(item)}
-        >
+        <Link to={`/catalog/${item.id}`} className="text-button product-title">
           {item.title}
-        </button>
+        </Link>
         <p className="product-code">
           {t("Артикул:")} {item.id.toUpperCase()}
         </p>
         <div className="product-bottom">
-          <strong>
-            {Number(item.price).toLocaleString(
-              language === "kk" ? "kk-KZ" : "ru-RU",
-            )}{" "}
-            ₸ <small>{t("/ шт.")}</small>
-          </strong>
+          <ProductPrice item={item} />
           <button
             className="button outline small"
             onClick={() => onSelect(item)}

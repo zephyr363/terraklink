@@ -1,6 +1,6 @@
 import { useTranslation } from "../i18n";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { LocalizedLink as Link } from "../i18n/navigation";
 import { MapPin, LocateFixed } from "lucide-react";
 import {
   cities,

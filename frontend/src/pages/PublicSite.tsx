@@ -5,8 +5,23 @@ import {
   useTranslation,
   type Language,
 } from "../i18n";
-import { Fragment, useEffect, useState, type CSSProperties } from "react";
-import { Link, NavLink, useLocation } from "react-router-dom";
+import {
+  Fragment,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import {
+  LocalizedLink as Link,
+  LocalizedNavLink as NavLink,
+  languageHref,
+} from "../i18n/navigation";
+import { ProductGallery } from "../components/ProductGallery";
+import { ProductPrice } from "../components/ProductPrice";
+import { activePromo } from "../domain/products";
+import { Seo } from "../components/Seo";
 import {
   ArrowRight,
   Blocks,
@@ -56,6 +71,22 @@ export function PublicSite({
     ? localizedDocument(sourceDocument, language)
     : undefined;
   const location = useLocation();
+  const navigate = useNavigate();
+  const firstNavigation = useRef(true);
+  useEffect(() => {
+    if (previewDocument) return;
+    const requested = new URLSearchParams(location.search).get("lang");
+    if (firstNavigation.current) {
+      firstNavigation.current = false;
+      if (!requested && language === "kk") {
+        navigate(languageHref(location.pathname + location.search, "kk"), {
+          replace: true,
+        });
+        return;
+      }
+    }
+    setLanguage(requested === "kk" ? "kk" : "ru");
+  }, [location.pathname, location.search]);
   const [previewUrl, setPreviewUrl] = useState("/");
   const currentUrl = previewDocument
     ? new URL(previewUrl, window.location.origin)
@@ -131,7 +162,10 @@ export function PublicSite({
     ["/dealers", "Где купить"],
     ["/contacts", "Контакты"],
   ];
-  const title = nav.find(([path]) => path === page)?.[1];
+  const detailProduct = products.find((item) => page === `/catalog/${item.id}`);
+  const detailPromo = detailProduct ? activePromo(detailProduct) : null;
+  const title =
+    detailProduct?.title ?? nav.find(([path]) => path === page)?.[1];
   const regionSelect = (city: string) => {
     setRegion(city);
     try {
@@ -147,10 +181,14 @@ export function PublicSite({
         lang={language}
         className="public-site"
         onClickCapture={(event) => {
-          if (!previewDocument || !(event.target instanceof Element)) return;
+          if (!(event.target instanceof Element)) return;
           const link = event.target.closest("a");
           const href = link?.getAttribute("href");
           if (!href?.startsWith("/") || href.startsWith("//")) return;
+          if (!previewDocument) {
+            link?.setAttribute("href", languageHref(href, language));
+            return;
+          }
           // Keep draft navigation inside the preview instead of unmounting the editor.
           event.preventDefault();
           event.stopPropagation();
@@ -166,6 +204,7 @@ export function PublicSite({
           } as CSSProperties
         }
       >
+        {!previewDocument && <Seo path={page} language={language} />}
         <a className="skip-link" href="#main-content">
           {t("Перейти к содержимому")}
         </a>
@@ -189,6 +228,14 @@ export function PublicSite({
                 value={language}
                 onChange={(event) => {
                   setLanguage(event.target.value as Language);
+                  if (!previewDocument)
+                    navigate(
+                      languageHref(
+                        page + currentUrl.search,
+                        event.target.value as Language,
+                      ),
+                      { replace: true },
+                    );
                   setCategory("Все");
                   setSelected(null);
                   setProject(null);
@@ -307,6 +354,53 @@ export function PublicSite({
                 )}
               </Fragment>
             ))}
+          {page === "/" &&
+            (document.seo?.ai_summary || document.seo?.faq?.length) && (
+              <section className="container content-section brand-facts">
+                <h2>{company.name}</h2>
+                <p className="multiline">{document.seo.ai_summary}</p>
+                {document.seo.faq?.map((row, index) => (
+                  <details key={index}>
+                    <summary>{row.question}</summary>
+                    <p className="multiline">{row.answer}</p>
+                  </details>
+                ))}
+              </section>
+            )}
+          {detailProduct && (
+            <div className="container product-detail-page">
+              <ProductGallery key={detailProduct.id} item={detailProduct} />
+              <div>
+                <span className="eyebrow">{detailProduct.category}</span>
+                <p>
+                  {t("Артикул:")} {detailProduct.id}
+                </p>
+                <p className="multiline">{detailProduct.text}</p>
+                {detailPromo && (
+                  <aside className="product-promo">
+                    <h2>{detailPromo.label}</h2>
+                    <p>{detailPromo.text}</p>
+                  </aside>
+                )}
+                <p className="detail-price">
+                  <ProductPrice item={detailProduct} />
+                </p>
+                {company.demo && (
+                  <p className="muted">
+                    {t("Демонстрационная цена. Наличие и условия уточняются.")}
+                  </p>
+                )}
+                <LeadForm
+                  preview={!!previewDocument}
+                  region={region}
+                  subject={`${t("Заказ:")} ${detailProduct.title} (${detailProduct.id})`}
+                />
+                <Link className="text-button accent" to="/catalog">
+                  {t("Перейти в каталог")}
+                </Link>
+              </div>
+            </div>
+          )}
           {page === "/catalog" && (
             <div className="container catalog-page">
               <div className="catalog-tools">
@@ -475,6 +569,7 @@ export function PublicSite({
             <LegalPage kind={page.split("/")[2]} company={company} />
           )}
           {!["/", ...nav.map(([path]) => path)].includes(page) &&
+            !detailProduct &&
             !page.startsWith("/legal/") && (
               <div className="container empty-state">
                 <p>{t("Такой страницы нет.")}</p>
@@ -577,18 +672,23 @@ export function PublicSite({
         )}
         {selected && (
           <Dialog title={selected.title} onClose={() => setSelected(null)}>
-            <img
-              className="detail-product"
-              src={selected.image}
-              alt={selected.title}
-            />
+            <ProductGallery key={selected.id} item={selected} />
             <p>{selected.text}</p>
             <p className="detail-price">
-              {Number(selected.price).toLocaleString(
-                language === "kk" ? "kk-KZ" : "ru-RU",
-              )}{" "}
-              {t("₸ / шт.")}
+              <ProductPrice item={selected} />
             </p>
+            {activePromo(selected) && (
+              <aside className="product-promo">
+                <h3>{activePromo(selected)!.label}</h3>
+                <p>{activePromo(selected)!.text}</p>
+              </aside>
+            )}
+            <Link
+              to={`/catalog/${selected.id}`}
+              onClick={() => setSelected(null)}
+            >
+              {t("Страница товара")}
+            </Link>
             <p className="muted">
               {t("Демонстрационная цена. Наличие и условия уточняются.")}
             </p>

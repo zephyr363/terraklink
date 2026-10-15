@@ -1,6 +1,6 @@
 import { useTranslation } from "../i18n";
 import { useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { LocalizedLink as Link } from "../i18n/navigation";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { useCreateLeadMutation, errorMessage } from "../store/api";
 import { CONSENT_VERSION } from "../domain/consent";

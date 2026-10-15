@@ -1,47 +1,42 @@
 """Validate the editor document before it crosses the persistence boundary."""
 
 import re
-from urllib.parse import urlparse
 
 from rest_framework import serializers
 
 from .models import Lead
-from .validators import validate_phone
+from .seo_serializers import SeoSerializer
+from .validators import validate_media_url, validate_phone
 
 
-def validate_media_url(value):
-    if not value:
-        return value
-    if "\\" in value or any(ord(char) < 32 for char in value):
-        raise serializers.ValidationError("Недопустимые символы в ссылке.")
-    try:
-        parsed = urlparse(value)
-        hostname = parsed.hostname
-        parsed.port
-    except ValueError:
-        raise serializers.ValidationError("Некорректная ссылка.") from None
-    if value.startswith("/") and not value.startswith("//"):
-        return value
-    if (
-        parsed.scheme == "https"
-        and hostname
-        and parsed.username is None
-        and parsed.password is None
-    ):
-        return value
-    # Local S3 URLs are emitted by the development storage, never arbitrary HTTP hosts.
-    if (
-        parsed.scheme == "http"
-        and hostname in {"localhost", "127.0.0.1"}
-        and parsed.username is None
-        and parsed.password is None
-    ):
-        return value
-    raise serializers.ValidationError("Используйте HTTPS-ссылку или локальный путь.")
+class ProductImageSerializer(serializers.Serializer):
+    id = serializers.RegexField(r"^[a-zA-Z0-9_-]{1,80}$")
+    url = serializers.CharField(max_length=1000, validators=[validate_media_url])
+    alt = serializers.CharField(max_length=200, allow_blank=True)
+
+
+class PromoSerializer(serializers.Serializer):
+    enabled = serializers.BooleanField()
+    label = serializers.CharField(max_length=80, allow_blank=True)
+    text = serializers.CharField(max_length=1000, allow_blank=True)
+    price = serializers.DecimalField(max_digits=10, decimal_places=2, min_value=0, allow_null=True)
+    starts_on = serializers.DateField(required=False, allow_null=True)
+    ends_on = serializers.DateField(required=False, allow_null=True)
+
+    def validate(self, attrs):
+        if (
+            attrs.get("starts_on")
+            and attrs.get("ends_on")
+            and attrs["ends_on"] < attrs["starts_on"]
+        ):
+            raise serializers.ValidationError("Конец акции не может быть раньше начала.")
+        if attrs["enabled"] and not attrs["label"].strip():
+            raise serializers.ValidationError({"label": "Укажите название промо."})
+        return attrs
 
 
 class ItemSerializer(serializers.Serializer):
-    id = serializers.CharField(max_length=80)
+    id = serializers.RegexField(r"^[a-zA-Z0-9_-]{1,80}$")
     title = serializers.CharField(max_length=200)
     text = serializers.CharField(max_length=2000, required=False, allow_blank=True, default="")
     image = serializers.CharField(
@@ -56,6 +51,25 @@ class ItemSerializer(serializers.Serializer):
         max_digits=10, decimal_places=2, min_value=0, required=False, default=0
     )
     tag = serializers.CharField(max_length=100, required=False, allow_blank=True, default="")
+    images = ProductImageSerializer(many=True, required=False)
+    promo = PromoSerializer(required=False, allow_null=True)
+    seo_title = serializers.CharField(max_length=120, allow_blank=True, required=False)
+    seo_description = serializers.CharField(max_length=320, allow_blank=True, required=False)
+
+    def validate(self, attrs):
+        images = attrs.get("images", [])
+        if len(images) > 12 or len({image["id"] for image in images}) != len(images):
+            raise serializers.ValidationError(
+                {"images": "Не более 12 фотографий с уникальными ID."}
+            )
+        promo = attrs.get("promo")
+        if promo and promo.get("price") is not None and promo["price"] > attrs.get("price", 0):
+            raise serializers.ValidationError(
+                {"promo": "Промо-цена не может превышать обычную цену."}
+            )
+        if "images" in attrs:
+            attrs["image"] = images[0]["url"] if images else ""
+        return attrs
 
 
 class SectionSerializer(serializers.Serializer):
@@ -113,12 +127,23 @@ class CompanySerializer(serializers.Serializer):
 class LocalizedContentSerializer(serializers.Serializer):
     company = CompanySerializer()
     sections = SectionSerializer(many=True)
+    seo = SeoSerializer(required=False)
 
     def validate_sections(self, value):
         if not 1 <= len(value) <= 40:
             raise serializers.ValidationError("От 1 до 40 секций.")
         if len({s["id"] for s in value}) != len(value):
             raise serializers.ValidationError("ID секций должны быть уникальны.")
+        product_ids = [
+            item["id"]
+            for section in value
+            if section["type"] == "catalog"
+            for item in section["items"]
+        ]
+        if len(set(product_ids)) != len(product_ids):
+            raise serializers.ValidationError(
+                "ID товаров должны быть уникальны во всех секциях каталога."
+            )
         return value
 
 
