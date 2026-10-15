@@ -6,11 +6,13 @@ export function ProductEditor({
   item,
   onChange,
   onUpload,
+  onPromoUpload,
   uploading,
 }: {
   item: ContentItem;
   onChange: (patch: Partial<ContentItem>) => void;
   onUpload: (file: File, imageId: string) => void;
+  onPromoUpload: (file: File) => void;
   uploading: boolean;
 }) {
   const images = productImages(item);
@@ -29,6 +31,62 @@ export function ProductEditor({
     });
   return (
     <>
+      <fieldset>
+        <legend>Характеристики товара</legend>
+        {(item.attributes ?? []).map((row, index) => (
+          <div className="editor-fields" key={index}>
+            <label>
+              Название характеристики
+              <input
+                maxLength={80}
+                value={row.name}
+                onChange={(e) =>
+                  onChange({
+                    attributes: item.attributes!.map((r, i) =>
+                      i === index ? { ...r, name: e.target.value } : r,
+                    ),
+                  })
+                }
+              />
+            </label>
+            <label>
+              Значение характеристики
+              <input
+                maxLength={200}
+                value={row.value}
+                onChange={(e) =>
+                  onChange({
+                    attributes: item.attributes!.map((r, i) =>
+                      i === index ? { ...r, value: e.target.value } : r,
+                    ),
+                  })
+                }
+              />
+            </label>
+            <button
+              className="danger-button"
+              onClick={() =>
+                onChange({
+                  attributes: item.attributes!.filter((_, i) => i !== index),
+                })
+              }
+            >
+              Удалить характеристику
+            </button>
+          </div>
+        ))}
+        <button
+          className="button outline"
+          disabled={(item.attributes?.length ?? 0) >= 20}
+          onClick={() =>
+            onChange({
+              attributes: [...(item.attributes ?? []), { name: "", value: "" }],
+            })
+          }
+        >
+          Добавить характеристику
+        </button>
+      </fieldset>
       <fieldset className="product-media-editor">
         <legend>Фотографии товара</legend>
         <p className="muted">
@@ -222,6 +280,39 @@ export function ProductEditor({
           </button>
         )}
       </fieldset>
+      {item.promo && (
+        <fieldset>
+          <legend>Изображение промо</legend>
+          {item.promo.image && (
+            <img
+              className="editor-media-preview"
+              src={item.promo.image}
+              alt={item.promo.label}
+            />
+          )}
+          <label>
+            Ссылка на изображение промо
+            <input
+              maxLength={1000}
+              value={item.promo.image ?? ""}
+              onChange={(e) => patchPromo({ image: e.target.value })}
+            />
+          </label>
+          <label>
+            Загрузить изображение промо
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              disabled={uploading}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) onPromoUpload(file);
+                e.target.value = "";
+              }}
+            />
+          </label>
+        </fieldset>
+      )}
       <fieldset>
         <legend>SEO товара</legend>
         <label>

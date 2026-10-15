@@ -5,7 +5,7 @@ import {
   type FormEvent,
   type SetStateAction,
 } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import {
   ArrowDown,
@@ -76,7 +76,7 @@ const sectionNames: Record<SectionType, string> = {
 };
 const fonts: Font[] = ["Open Sans", "Arial", "Georgia"];
 
-function Login({ onSuccess }: { onSuccess: () => void }) {
+export function Login({ onSuccess }: { onSuccess: () => void }) {
   const dispatch = useDispatch();
   const { isSuccess: csrfReady } = useCsrfQuery();
   const [login, { isLoading }] = useLoginMutation();
@@ -193,7 +193,7 @@ function SectionEditor({
   onChange: (patch: Partial<Section>) => void;
   onUpload: (
     file: File,
-    target: "image" | "video",
+    target: "image" | "video" | "promo",
     itemIndex?: number,
     imageId?: string,
   ) => void;
@@ -230,6 +230,67 @@ function SectionEditor({
           onChange={(e) => onChange({ title: e.target.value })}
         />
       </label>
+      {section.type === "hero" && (
+        <fieldset>
+          <legend>Шаблон баннера</legend>
+          <div className="editor-fields">
+            <label>
+              Тип баннера
+              <select
+                aria-label="Тип баннера"
+                value={
+                  section.banner?.template ??
+                  (section.video ? "video" : "image")
+                }
+                onChange={(e) =>
+                  onChange({
+                    banner: {
+                      animation: section.banner?.animation ?? "none",
+                      template: e.target.value as NonNullable<
+                        Section["banner"]
+                      >["template"],
+                    },
+                  })
+                }
+              >
+                <option value="image">Изображение (по умолчанию)</option>
+                <option value="overlay">Изображение с текстом поверх</option>
+                <option value="split">Изображение и текст рядом</option>
+                <option value="video">Видео с обложкой</option>
+              </select>
+            </label>
+            <label>
+              Анимация
+              <select
+                aria-label="Анимация"
+                value={section.banner?.animation ?? "none"}
+                onChange={(e) =>
+                  onChange({
+                    banner: {
+                      template:
+                        section.banner?.template ??
+                        (section.video ? "video" : "image"),
+                      animation: e.target.value as NonNullable<
+                        Section["banner"]
+                      >["animation"],
+                    },
+                  })
+                }
+              >
+                <option value="none">Без анимации</option>
+                <option value="fade">Плавное появление</option>
+                <option value="slide">Сдвиг</option>
+                <option value="zoom">Приближение</option>
+              </select>
+            </label>
+          </div>
+          <p className="muted">
+            Используйте поля секции, загрузку фото/видео и слайды ниже.
+            Автовоспроизведение отключено; при уменьшении движения в настройках
+            устройства анимация отключается.
+          </p>
+        </fieldset>
+      )}
       <label>
         Текст / подзаголовок
         <textarea
@@ -389,6 +450,7 @@ function SectionEditor({
                   onUpload={(file, imageId) =>
                     onUpload(file, "image", index, imageId)
                   }
+                  onPromoUpload={(file) => onUpload(file, "promo", index)}
                   uploading={uploading}
                 />
               ) : (
@@ -509,12 +571,18 @@ export function Admin() {
   }, []);
   const { data: config } = useConfigQuery();
   const dispatch = useDispatch();
-  const [loggedIn, setLoggedIn] = useState(false);
+  const access = useSelector(
+    (state: { auth: { access: string } }) => state.auth.access,
+  );
+  const [loggedIn, setLoggedIn] = useState(!!access);
   const {
     data,
     error: draftError,
     refetch,
-  } = useDraftQuery(undefined, { skip: !loggedIn });
+  } = useDraftQuery(undefined, {
+    skip: !loggedIn,
+    refetchOnMountOrArgChange: true,
+  });
   const [siteDocument, setSiteDocument] = useState<SiteDocument | null>(null);
   const [editingLanguage, setEditingLanguage] = useState<Language>("ru");
   const document = siteDocument
@@ -651,7 +719,7 @@ export function Admin() {
   };
   const uploadFile = async (
     file: File,
-    target: "image" | "video",
+    target: "image" | "video" | "promo",
     itemIndex?: number,
     imageId?: string,
   ) => {
@@ -663,7 +731,7 @@ export function Admin() {
       return;
     }
     const maxSize =
-      config.upload_limits[target === "image" ? "image_mb" : "video_mb"];
+      config.upload_limits[target === "video" ? "video_mb" : "image_mb"];
     if (file.size > maxSize * 1024 * 1024) {
       setFailure(`Файл должен быть не больше ${maxSize} МБ.`);
       return;
@@ -689,16 +757,23 @@ export function Admin() {
                     items: section.items.map((item) =>
                       item.id !== itemId
                         ? item
-                        : imageId
-                          ? withProductImages(
-                              item,
-                              productImages(item).map((image) =>
-                                image.id === imageId
-                                  ? { ...image, url: result.url }
-                                  : image,
-                              ),
-                            )
-                          : { ...item, image: result.url },
+                        : target === "promo"
+                          ? {
+                              ...item,
+                              promo: item.promo
+                                ? { ...item.promo, image: result.url }
+                                : item.promo,
+                            }
+                          : imageId
+                            ? withProductImages(
+                                item,
+                                productImages(item).map((image) =>
+                                  image.id === imageId
+                                    ? { ...image, url: result.url }
+                                    : image,
+                                ),
+                              )
+                            : { ...item, image: result.url },
                     ),
                   }),
           ),
@@ -751,6 +826,8 @@ export function Admin() {
           <FileText size={19} />
           История и пользователи
         </a>
+        <Link to="/analytics">Аналитика</Link>
+        <Link to="/management">Управление</Link>
         <div className="admin-sidebar-bottom">
           <Link to="/" target="_blank">
             Открыть сайт

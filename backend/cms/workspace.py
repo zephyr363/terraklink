@@ -12,13 +12,14 @@ from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
+from .consent import CONSENT_VERSION
 from .models import AnalyticsCounter, ContentRevision, Lead, MediaAsset
 from .serializers import DocumentSerializer
 from .services import update_content
 
 
 class EventSerializer(serializers.Serializer):
-    consent_version = serializers.ChoiceField(choices=["2026-10-16"])
+    consent_version = serializers.ChoiceField(choices=[CONSENT_VERSION])
     consent = serializers.BooleanField()
     event = serializers.ChoiceField(choices=["page_view", "product_view", "lead_sent"])
     path = serializers.RegexField(

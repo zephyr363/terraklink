@@ -4,6 +4,7 @@ import { LocalizedLink as Link } from "../i18n/navigation";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { useCreateLeadMutation, errorMessage } from "../store/api";
 import { CONSENT_VERSION } from "../domain/consent";
+import { trackEvent } from "../domain/analytics";
 
 export function LeadForm({
   region,
@@ -34,6 +35,7 @@ export function LeadForm({
         honeypot: String(data.get("website") ?? ""),
       }).unwrap();
       setSuccess(true);
+      trackEvent("lead_sent");
     } catch (err) {
       setError(errorMessage(err));
     }

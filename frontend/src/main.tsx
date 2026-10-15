@@ -5,6 +5,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { store } from "./store";
 import { PublicSite } from "./pages/PublicSite";
 import { Admin } from "./pages/Admin";
+import { Workspace } from "./pages/Workspace";
 import "./styles.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
@@ -13,6 +14,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <BrowserRouter>
         <Routes>
           <Route path="/admin/*" element={<Admin />} />
+          <Route path="/analytics/*" element={<Workspace mode="analytics" />} />
+          <Route path="/management/*" element={<Workspace mode="management" />} />
           <Route path="*" element={<PublicSite />} />
         </Routes>
       </BrowserRouter>

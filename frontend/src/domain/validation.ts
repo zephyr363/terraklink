@@ -59,6 +59,14 @@ export function validateDocument(document: SiteDocument): string[] {
       if (!validMedia(section.image) || !validMedia(section.video))
         errors.push(`${label}: используйте HTTPS-ссылку или локальный путь.`);
       if (
+        section.banner &&
+        (!["image", "overlay", "split", "video"].includes(
+          section.banner.template,
+        ) ||
+          !["none", "fade", "slide", "zoom"].includes(section.banner.animation))
+      )
+        errors.push(`${label}: выберите допустимые шаблон и анимацию баннера.`);
+      if (
         ![section.color, section.background].every((value) =>
           /^#[\da-f]{6}$/i.test(value),
         )
@@ -79,6 +87,22 @@ export function validateDocument(document: SiteDocument): string[] {
       if (section.items.length > 100)
         errors.push(`${label}: не более 100 элементов.`);
       for (const item of section.items) {
+        const attributes = item.attributes ?? [];
+        if (
+          attributes.length > 20 ||
+          new Set(attributes.map((row) => row.name.trim().toLocaleLowerCase()))
+            .size !== attributes.length ||
+          attributes.some(
+            (row) =>
+              !row.name.trim() ||
+              !row.value.trim() ||
+              row.name.length > 80 ||
+              row.value.length > 200,
+          )
+        )
+          errors.push(
+            `${label}: заполните до 20 характеристик с уникальными названиями.`,
+          );
         if (!/^[a-zA-Z0-9_-]{1,80}$/.test(item.id) || itemIds.has(item.id))
           errors.push(`${label}: ID элементов должны быть уникальны.`);
         itemIds.add(item.id);
@@ -108,6 +132,8 @@ export function validateDocument(document: SiteDocument): string[] {
         }
         if (item.promo) {
           const promo = item.promo;
+          if (!validMedia(promo.image ?? ""))
+            errors.push(`${label}: некорректная ссылка на изображение промо.`);
           if (promo.enabled && !promo.label.trim())
             errors.push(`${label}: укажите название промо.`);
           if (

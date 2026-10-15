@@ -4,6 +4,7 @@ import re
 
 from rest_framework import serializers
 
+from .consent import CONSENT_VERSION
 from .models import Lead
 from .seo_serializers import SeoSerializer
 from .validators import validate_media_url, validate_phone
@@ -229,7 +230,7 @@ class LeadSerializer(serializers.ModelSerializer):
         return value
 
     def validate_consent_version(self, value):
-        if value != "2026-10-15":
+        if value != CONSENT_VERSION:
             raise serializers.ValidationError("Обновите страницу и прочитайте актуальное согласие.")
         return value
 
