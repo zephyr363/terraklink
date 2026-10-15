@@ -40,7 +40,7 @@ docker compose up --build -d
 docker compose exec backend python manage.py createsuperuser
 ```
 
-Сайт и редактор: http://localhost:8080 и http://localhost:8080/admin. TerraKlink Admin: http://localhost:8080/django-admin/. MinIO Console доступна только на локальном интерфейсе http://localhost:9001; вход — переменные `MINIO_ROOT_USER` и `MINIO_ROOT_PASSWORD` из `.env`. Автоматически созданный `.env` предназначен для локального окружения.
+Сайт и редактор: http://localhost и http://localhost/admin. TerraKlink Admin: http://localhost/django-admin/. MinIO Console доступна только на локальном интерфейсе http://localhost:9001; вход — переменные `MINIO_ROOT_USER` и `MINIO_ROOT_PASSWORD` из `.env`. Автоматически созданный `.env` предназначен для локального окружения.
 
 Для уже созданного локального пользователя `editor` можно вместо интерактивного `createsuperuser` выполнить `uv run scripts/setup_docker_editor.py`: пароль передаётся контейнеру через stdin и не попадает в аргументы команды. Скрипт разрешён только при `DJANGO_DEBUG=1` и не меняет существующего пользователя.
 
@@ -87,6 +87,8 @@ GitHub Actions проверяет backend на PostgreSQL, frontend-сборку
 Объяснение модулей и принятых решений: [docs/architecture.md](docs/architecture.md). Требования Казахстана и границы проверки: [docs/compliance.md](docs/compliance.md). Результаты фактически выполненных проверок: [docs/verification.md](docs/verification.md).
 
 ## Языки и production
+
+Локальный Nginx по умолчанию доступен на `http://localhost:80`; порт 8080 оставлен совместимым адресом. Порты задаются `WEB_PORT` и `WEB_COMPAT_PORT`. При смене основного адреса обновляйте `S3_PUBLIC_DOMAIN` и `CSRF_TRUSTED_ORIGINS` в локальном `.env`; production использует отдельную конфигурацию.
 
 В шапке сайта доступны русский и казахский языки; выбор сохраняется в браузере. В редакторе «Язык контента» переключает независимые версии секций и контактов, оформление общее. Публикация атомарно публикует обе версии. При отсутствии перевода переводятся только известные демонстрационные строки; произвольный контент остаётся исходным до редактирования KZ.
 
