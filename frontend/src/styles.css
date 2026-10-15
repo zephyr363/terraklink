@@ -516,7 +516,8 @@ a:hover {
   gap: 60px;
   align-items: center;
 }
-.about-grid > img {
+.about-grid > img,
+.about-grid > video {
   width: 100%;
   height: 380px;
   object-fit: cover;
@@ -1678,7 +1679,8 @@ th {
     grid-template-columns: 1fr;
     gap: 24px;
   }
-  .about-grid > img {
+  .about-grid > img,
+  .about-grid > video {
     height: 260px;
   }
   .contact-call {

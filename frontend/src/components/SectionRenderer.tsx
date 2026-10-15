@@ -118,16 +118,49 @@ function Hero({ section }: { section: Section }) {
   );
 }
 
+function SectionMedia({
+  section,
+  className = "custom-media",
+}: {
+  section: Section;
+  className?: string;
+}) {
+  if (section.video)
+    return (
+      <video
+        className={className}
+        src={section.video}
+        poster={section.image || undefined}
+        controls
+        preload="metadata"
+        style={{ filter: "var(--media-filter)" }}
+      />
+    );
+  if (section.image)
+    return (
+      <img
+        className={className}
+        src={section.image}
+        alt={section.title}
+        loading="lazy"
+        style={{ filter: "var(--media-filter)" }}
+      />
+    );
+  return null;
+}
+
 export function SectionRenderer({
   section,
   region,
   onProduct,
   onProject,
+  preview = false,
 }: {
   section: Section;
   region: string;
   onProduct: (item: ContentItem) => void;
   onProject: (item: ContentItem) => void;
+  preview?: boolean;
 }) {
   const style: CSSProperties = {
     color: section.color,
@@ -145,16 +178,25 @@ export function SectionRenderer({
   if (section.type === "features")
     return (
       <section id={section.id} className="features" style={style}>
-        <div className="container features-grid">
-          {section.items.map((item) => (
-            <div className="feature" key={item.id}>
-              <img src={item.image} alt="" />
-              <div>
-                <h3>{item.title}</h3>
-                <p>{item.text}</p>
+        <div className="container">
+          {section.title && <h2>{section.title}</h2>}
+          {section.subtitle && <p className="multiline">{section.subtitle}</p>}
+          <div className="features-grid">
+            {section.items.map((item) => (
+              <div className="feature" key={item.id}>
+                <img
+                  src={item.image}
+                  alt=""
+                  style={{ filter: "var(--media-filter)" }}
+                />
+                <div>
+                  <h3>{item.title}</h3>
+                  <p>{item.text}</p>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
+          <SectionMedia section={section} />
         </div>
       </section>
     );
@@ -235,6 +277,7 @@ export function SectionRenderer({
               <h3>Поможем с выбором</h3>
               <p className="muted">Оставьте номер для консультации</p>
               <LeadForm
+                preview={preview}
                 region={region}
                 subject="Консультация по подбору кирпича"
               />
@@ -243,7 +286,7 @@ export function SectionRenderer({
         )}
         {section.type === "about" && (
           <div className="about-grid">
-            <img src={section.image} alt={section.title} loading="lazy" />
+            <SectionMedia section={section} className="" />
             <div>
               <span className="eyebrow accent">О компании</span>
               <h2>{section.title}</h2>
@@ -288,33 +331,9 @@ export function SectionRenderer({
           <>
             <h2>{section.title}</h2>
             <p className="multiline">{section.subtitle}</p>
-            {section.type === "image" && section.image && (
-              <img
-                className="custom-media"
-                src={section.image}
-                alt={section.title}
-              />
-            )}{" "}
-            {section.type === "video" && section.video && (
-              <video
-                className="custom-media"
-                src={section.video}
-                poster={section.image || undefined}
-                controls
-                preload="metadata"
-              />
-            )}
           </>
         )}
-        {section.video && section.type !== "video" && (
-          <video
-            className="custom-media"
-            src={section.video}
-            poster={section.image || undefined}
-            controls
-            preload="metadata"
-          />
-        )}
+        {section.type !== "about" && <SectionMedia section={section} />}
       </div>
     </section>
   );

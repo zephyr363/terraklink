@@ -121,17 +121,36 @@ export const {
   useLeadsQuery,
 } = contentApi;
 
+// DRF errors may be a string, a list, or nested field errors.
+function validationMessages(value: unknown, depth = 0): string[] {
+  if (depth > 5) return [];
+  if (typeof value === "string") return [value];
+  if (Array.isArray(value))
+    return value
+      .slice(0, 10)
+      .flatMap((item) => validationMessages(item, depth + 1));
+  if (value && typeof value === "object")
+    return Object.values(value)
+      .slice(0, 10)
+      .flatMap((item) => validationMessages(item, depth + 1));
+  return [];
+}
+
 export function errorMessage(error: unknown): string {
   if (error && typeof error === "object" && "status" in error) {
-    const e = error as { status: number | string; data?: { detail?: string } };
+    const e = error as { status: number | string; data?: unknown };
     if (e.status === 409)
       return "Другой редактор изменил страницу. Скопируйте свои изменения и загрузите актуальную версию.";
     if (e.status === 401 || e.status === 403)
       return "Нет доступа. Проверьте логин, пароль и права редактора.";
     if (e.status === 429) return "Слишком много запросов. Попробуйте позже.";
+    if (e.status === 413) return "Файл превышает допустимый размер загрузки.";
     if (e.status === 400)
       return (
-        e.data?.detail ??
+        [...new Set(validationMessages(e.data))]
+          .slice(0, 10)
+          .join(" ")
+          .slice(0, 2000) ||
         "Проверьте поля: телефон, согласие, ссылки и допустимые значения."
       );
   }

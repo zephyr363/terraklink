@@ -42,6 +42,10 @@ export function PublicSite({
   );
   const document = previewDocument ?? data?.document;
   const location = useLocation();
+  const [previewUrl, setPreviewUrl] = useState("/");
+  const currentUrl = previewDocument
+    ? new URL(previewUrl, window.location.origin)
+    : location;
   const [region, setRegion] = useState(() => {
     try {
       return localStorage.getItem("tk-region") || "";
@@ -62,11 +66,11 @@ export function PublicSite({
     window.scrollTo(0, 0);
     setMenuOpen(false);
     setCategory(
-      new URLSearchParams(location.search).get("collection") === "taiga"
+      new URLSearchParams(currentUrl.search).get("collection") === "taiga"
         ? "Коллекция Тайга"
         : "Все",
     );
-  }, [location.pathname, location.search]);
+  }, [currentUrl.pathname, currentUrl.search]);
   if (!document)
     return (
       <div className="load-screen">
@@ -97,7 +101,13 @@ export function PublicSite({
     "Все",
     ...new Set(products.map((product) => product.category)),
   ];
-  const page = previewDocument ? "/" : location.pathname;
+  const page = currentUrl.pathname;
+  const hero = sections.find((section) => section.type === "hero");
+  const heroIndex = sections.findIndex((section) => section.id === hero?.id);
+  const titleAfter =
+    sections[heroIndex + 1]?.type === "features"
+      ? sections[heroIndex + 1].id
+      : hero?.id;
   const nav = [
     ["/", "Главная"],
     ["/catalog", "Каталог"],
@@ -120,6 +130,19 @@ export function PublicSite({
   return (
     <div
       className="public-site"
+      onClickCapture={(event) => {
+        if (!previewDocument || !(event.target instanceof Element)) return;
+        const link = event.target.closest("a");
+        const href = link?.getAttribute("href");
+        if (!href?.startsWith("/") || href.startsWith("//")) return;
+        // Keep draft navigation inside the preview instead of unmounting the editor.
+        event.preventDefault();
+        event.stopPropagation();
+        setPreviewUrl(href);
+        setCallback(false);
+        setSelected(null);
+        setProject(null);
+      }}
       style={
         {
           "--accent": document.theme.accent,
@@ -181,7 +204,14 @@ export function PublicSite({
           aria-label="Главная навигация"
         >
           {nav.map(([path, label]) => (
-            <NavLink to={path} end={path === "/"} key={path}>
+            <NavLink
+              to={path}
+              end={path === "/"}
+              key={path}
+              className={
+                previewDocument ? (page === path ? "active" : "") : undefined
+              }
+            >
               {label}
               {[
                 "Главная",
@@ -213,19 +243,27 @@ export function PublicSite({
           </div>
         )}
         {page === "/" &&
-          sections.map((section, index) => (
+          sections.map((section) => (
             <Fragment key={section.id}>
               <SectionRenderer
                 section={section}
                 region={region}
                 onProduct={setSelected}
                 onProject={setProject}
+                preview={!!previewDocument}
               />
-              {(section.type === "features" ||
-                (section.type === "hero" &&
-                  sections[index + 1]?.type !== "features")) && (
-                <div className="container plant-title">
-                  <h1>{sections.find((s) => s.type === "hero")?.title}</h1>
+              {hero && section.id === titleAfter && (
+                <div
+                  className="plant-title"
+                  style={{
+                    color: hero.color,
+                    backgroundColor: hero.background,
+                    fontFamily: `'${hero.font}', sans-serif`,
+                  }}
+                >
+                  <div className="container">
+                    <h1>{hero.title}</h1>
+                  </div>
                 </div>
               )}
             </Fragment>
@@ -375,6 +413,7 @@ export function PublicSite({
             <div>
               <h2>Напишите нам</h2>
               <LeadForm
+                preview={!!previewDocument}
                 region={region}
                 subject={
                   page === "/dealers"
@@ -474,7 +513,11 @@ export function PublicSite({
       {callback && (
         <Dialog title="Заказать звонок" onClose={() => setCallback(false)}>
           <p className="muted">Оставьте контакты, чтобы обсудить ваш проект.</p>
-          <LeadForm region={region} subject="Обратный звонок" />
+          <LeadForm
+            preview={!!previewDocument}
+            region={region}
+            subject="Обратный звонок"
+          />
         </Dialog>
       )}
       {selected && (
@@ -492,6 +535,7 @@ export function PublicSite({
             Демонстрационная цена. Наличие и условия уточняются.
           </p>
           <LeadForm
+            preview={!!previewDocument}
             region={region}
             subject={`Заказ: ${selected.title} (${selected.id})`}
           />

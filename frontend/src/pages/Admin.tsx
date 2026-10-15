@@ -467,6 +467,7 @@ export function Admin() {
   const [tab, setTab] = useState<"sections" | "settings" | "leads">("sections");
   const [dirty, setDirty] = useState(false);
   const [preview, setPreview] = useState(false);
+  const [reloading, setReloading] = useState(false);
   const [notice, setNotice] = useState("");
   const [failure, setFailure] = useState("");
   const [addType, setAddType] = useState<SectionType>("text");
@@ -476,14 +477,21 @@ export function Admin() {
   const [logout] = useLogoutMutation();
   const lastServerRevision = useRef(0);
   useEffect(() => {
-    // Refetches must not discard unsaved local edits after an unrelated query.
-    if (data && data.revision !== lastServerRevision.current && !dirty) {
+    // Cached snapshots can arrive after a save; never roll the editor back.
+    if (data && data.revision > lastServerRevision.current && !dirty) {
       setDocument(structuredClone(data.document));
       setRevision(data.revision);
       setPublishedRevision(data.published_revision ?? 0);
       lastServerRevision.current = data.revision;
     }
   }, [data, dirty]);
+  useEffect(() => {
+    if (
+      document &&
+      !document.sections.some((section) => section.id === selectedId)
+    )
+      setSelectedId(document.sections[0]?.id ?? "");
+  }, [document, selectedId]);
   useEffect(() => {
     const warn = (e: BeforeUnloadEvent) => {
       if (dirty) e.preventDefault();
@@ -523,7 +531,7 @@ export function Admin() {
   const selected = document.sections.find(
     (section) => section.id === selectedId,
   );
-  const busy = saving || publishing || uploading;
+  const busy = saving || publishing || uploading || reloading;
   const edit = (next: SiteDocument) => {
     setDocument(next);
     setDirty(true);
@@ -660,6 +668,12 @@ export function Admin() {
               dispatch(contentApi.util.resetApiState());
               setLoggedIn(false);
               setDocument(null);
+              setDirty(false);
+              setPreview(false);
+              setNotice("");
+              setFailure("");
+              setSelectedId("hero");
+              setTab("sections");
               lastServerRevision.current = 0;
             }}
           >
@@ -723,10 +737,22 @@ export function Admin() {
               <button
                 className="text-button"
                 onClick={async () => {
-                  setDirty(false);
-                  lastServerRevision.current = 0;
-                  await refetch();
-                  setFailure("");
+                  setReloading(true);
+                  try {
+                    // Only replace local edits after the server returned a fresh snapshot.
+                    const result = await refetch().unwrap();
+                    setDocument(structuredClone(result.document));
+                    setRevision(result.revision);
+                    setPublishedRevision(result.published_revision ?? 0);
+                    lastServerRevision.current = result.revision;
+                    setDirty(false);
+                    setNotice("");
+                    setFailure("");
+                  } catch (err) {
+                    setFailure(errorMessage(err));
+                  } finally {
+                    setReloading(false);
+                  }
                 }}
               >
                 Загрузить серверную версию (сбросить локальные изменения)
