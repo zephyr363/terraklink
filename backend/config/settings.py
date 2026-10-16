@@ -13,7 +13,8 @@ ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,backend,t
     ","
 )
 INSTALLED_APPS = [
-    "django.contrib.admin",
+    "unfold.apps.BasicAppConfig",
+    "cms.admin_apps.TerraAdminConfig",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
@@ -23,6 +24,34 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "cms",
 ]
+
+UNFOLD = {
+    "SITE_TITLE": "TerraKlink Admin",
+    "SITE_HEADER": "TerraKlink Admin",
+    "SITE_URL": "/",
+    "SHOW_HISTORY": True,
+    "SHOW_VIEW_ON_SITE": True,
+    "COLORS": {
+        "primary": {
+            "50": "rgb(255 247 237)",
+            "100": "rgb(255 237 213)",
+            "200": "rgb(254 215 170)",
+            "300": "rgb(253 186 116)",
+            "400": "rgb(251 146 60)",
+            "500": "rgb(255 112 0)",
+            "600": "rgb(234 88 12)",
+            "700": "rgb(194 65 12)",
+            "800": "rgb(154 52 18)",
+            "900": "rgb(124 45 18)",
+            "950": "rgb(67 20 7)",
+        }
+    },
+    "SIDEBAR": {
+        "show_search": True,
+        "show_all_applications": True,
+        "navigation": "cms.admin_navigation.navigation",
+    },
+}
 MIDDLEWARE = [
     "cms.errors.DatabaseErrorMiddleware",
     "django.middleware.security.SecurityMiddleware",

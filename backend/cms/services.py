@@ -36,4 +36,8 @@ def update_content(*, expected_revision, editor, document=None, publish=False):
         editor=editor,
     )
     site.refresh_from_db()
+    if not publish:
+        from .catalog import sync_products
+
+        sync_products(site.draft)
     return site

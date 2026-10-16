@@ -3,6 +3,7 @@ from pathlib import Path
 
 from django.core.management.base import BaseCommand
 
+from cms.catalog import sync_products
 from cms.models import SiteContent
 from cms.serializers import DocumentSerializer
 
@@ -16,7 +17,8 @@ class Command(BaseCommand):
         )
         validator = DocumentSerializer(data=document)
         validator.is_valid(raise_exception=True)
-        _, created = SiteContent.objects.get_or_create(
+        site, created = SiteContent.objects.get_or_create(
             key="main", defaults={"draft": document, "published": document, "published_revision": 1}
         )
+        sync_products(site.draft)
         self.stdout.write("Demo content initialized" if created else "Existing content preserved")

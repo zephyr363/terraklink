@@ -84,7 +84,7 @@ class ItemSerializer(serializers.Serializer):
             raise serializers.ValidationError(
                 {"promo": "Промо-цена не может превышать обычную цену."}
             )
-        if "images" in attrs:
+        if "images" in attrs and not attrs.get("image"):
             attrs["image"] = images[0]["url"] if images else ""
         return attrs
 

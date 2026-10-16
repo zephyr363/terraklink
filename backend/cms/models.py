@@ -1,8 +1,68 @@
 """Content aggregate owns draft/public snapshots; enquiries remain separate records."""
 
 from django.conf import settings
+from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
+
+from .validators import validate_media_url
+
+
+class Product(models.Model):
+    """Queryable projection of catalog entries in the site draft, never a second publication."""
+
+    language = models.CharField(
+        "Язык", max_length=2, choices=[("ru", "Русский"), ("kk", "Қазақша")], default="ru"
+    )
+    section_id = models.CharField("Секция каталога", max_length=80)
+    code = models.CharField(
+        "Артикул",
+        max_length=80,
+        validators=[
+            RegexValidator(
+                r"^[a-zA-Z0-9_-]{1,80}$", "Латинские буквы, цифры, дефис и подчёркивание."
+            )
+        ],
+    )
+    title = models.CharField("Название", max_length=200)
+    text = models.TextField("Описание", max_length=2000)
+    category = models.CharField("Категория", max_length=100)
+    price = models.DecimalField(
+        "Цена, ₸ / шт.", max_digits=10, decimal_places=2, validators=[MinValueValidator(0)]
+    )
+    preview = models.CharField("Превью (ссылка)", max_length=1000, validators=[validate_media_url])
+    tag = models.CharField("Метка", max_length=100, blank=True)
+    attributes = models.JSONField("Характеристики", default=list, blank=True)
+    promo = models.JSONField("Промо", default=dict, blank=True)
+    seo_title = models.CharField("SEO-заголовок", max_length=120, blank=True)
+    seo_description = models.CharField("SEO-описание", max_length=320, blank=True)
+
+    class Meta:
+        verbose_name = "товар"
+        verbose_name_plural = "Продукция"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["language", "code"], name="unique_product_language_code"
+            )
+        ]
+
+    def __str__(self):
+        return self.title
+
+
+class ProductImage(models.Model):
+    product = models.ForeignKey(
+        Product, on_delete=models.CASCADE, related_name="images", verbose_name="Товар"
+    )
+    image_id = models.CharField(max_length=80)
+    url = models.CharField("Изображение (ссылка)", max_length=1000, validators=[validate_media_url])
+    alt = models.CharField("Описание изображения", max_length=200)
+    position = models.PositiveSmallIntegerField("Порядок", default=1)
+
+    class Meta:
+        verbose_name = "фотография карусели"
+        verbose_name_plural = "Фотографии карусели (отдельно от превью)"
+        ordering = ["position", "pk"]
 
 
 class AnalyticsCounter(models.Model):
