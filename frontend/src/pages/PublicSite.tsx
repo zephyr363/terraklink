@@ -12,7 +12,7 @@ import {
   useState,
   type CSSProperties,
 } from "react";
-import { useLocation, useNavigate, useNavigation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   LocalizedLink as Link,
   LocalizedNavLink as NavLink,
@@ -69,8 +69,6 @@ export function PublicSite({
   previewLanguage?: Language;
 }) {
   const { language, setLanguage, t } = useSiteLanguage(previewLanguage);
-  const navigation = useNavigation();
-  const isRouteNavigating = navigation.state === "loading";
   const { data, isLoading } = usePublicContentQuery(
     undefined,
     { skip: !!previewDocument },
@@ -219,7 +217,6 @@ export function PublicSite({
   };
   if (
     !document ||
-    isRouteNavigating ||
     (page === "/catalog" && productsLoading) ||
     (page.startsWith("/catalog/") && detailProductLoading)
   )
@@ -227,10 +224,7 @@ export function PublicSite({
       <div className="load-screen">
         <BrickLoadingScreen
           message={
-            isLoading ||
-            isRouteNavigating ||
-            productsLoading ||
-            detailProductLoading
+            isLoading || productsLoading || detailProductLoading
               ? t("Загружаем сайт…")
               : t("Контент ещё не опубликован.")
           }
