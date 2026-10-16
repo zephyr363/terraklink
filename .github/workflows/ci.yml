@@ -29,10 +29,14 @@ jobs:
       - run: uv run ruff check backend
       - run: uv run backend/manage.py makemigrations --check --dry-run
       - run: uv run pytest
+      - name: Test Python Alpine image against PostgreSQL
+        run: |
+          docker build --target test -f backend/Dockerfile -t terraklink-api:test .
+          docker run --rm --network host -e POSTGRES_HOST -e POSTGRES_DB -e POSTGRES_USER -e POSTGRES_PASSWORD terraklink-api:test
   web:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    env: {DJANGO_DEBUG: '1', E2E_EDITOR_PASSWORD: 'CI-Test-Password-42!', LOGIN_THROTTLE_RATE: '100/hour'}
+    env: {DJANGO_DEBUG: '1', DJANGO_SETTINGS_MODULE: 'config.browser_tests', E2E_EDITOR_PASSWORD: 'CI-Test-Password-42!', LOGIN_THROTTLE_RATE: '100/hour'}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -53,9 +57,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
         working-directory: frontend
       - run: |
-          uv run backend/manage.py migrate
-          uv run backend/manage.py seed_content
-          uv run backend/manage.py shell -c "import os; from django.contrib.auth import get_user_model; get_user_model().objects.create_superuser('editor', password=os.environ['E2E_EDITOR_PASSWORD'])"
+          uv run --frozen scripts/prepare_browser_tests.py
           uv run backend/manage.py runserver 127.0.0.1:8000 --noreload > /tmp/backend.log 2>&1 &
           cd frontend
           npm run dev > /tmp/frontend.log 2>&1 &

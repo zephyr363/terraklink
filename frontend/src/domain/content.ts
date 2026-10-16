@@ -146,6 +146,27 @@ export function moveSection(
   return result;
 }
 
+// A position is one-based in the editor. Invalid input never changes the document.
+export function placeSection(
+  sections: Section[],
+  id: string,
+  position: number,
+): Section[] {
+  const from = sections.findIndex((section) => section.id === id);
+  if (
+    from < 0 ||
+    !Number.isInteger(position) ||
+    position < 1 ||
+    position > sections.length ||
+    from === position - 1
+  )
+    return sections;
+  const result = [...sections];
+  const [section] = result.splice(from, 1);
+  result.splice(position - 1, 0, section);
+  return result;
+}
+
 // The main banner image and first slide are one visible asset with two editor entry points.
 export function patchSectionContent(
   section: Section,

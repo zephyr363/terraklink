@@ -19,3 +19,5 @@ backend/staticfiles
 **/__pycache__
 docs/screenshots
 reference*
+graphify-out
+.vscode

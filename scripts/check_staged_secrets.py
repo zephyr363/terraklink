@@ -5,7 +5,9 @@ import subprocess
 from pathlib import Path
 
 root = Path(__file__).resolve().parent.parent
-staged = subprocess.check_output(["git", "diff", "--cached", "--name-only", "-z"], cwd=root)
+staged = subprocess.check_output(
+    ["git", "diff", "--cached", "--name-only", "--diff-filter=ACMRT", "-z"], cwd=root
+)
 paths = [path.decode("utf-8") for path in staged.split(b"\0") if path]
 secrets = []
 for env_file in root.glob(".env*"):

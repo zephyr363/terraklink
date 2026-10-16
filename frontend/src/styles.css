@@ -1155,6 +1155,41 @@ input[type="range"] {
   margin-bottom: 7px;
   min-height: 67px;
 }
+.section-row {
+  align-items: center;
+}
+.section-row input.section-position[type="number"] {
+  flex: 0 0 42px;
+  width: 42px;
+  min-width: 42px;
+  padding: 5px 2px;
+  margin-left: 4px;
+  margin-top: 0;
+  font-size: 11px;
+}
+.section-row > .section-select {
+  flex: 1;
+  width: auto;
+  padding: 9px 6px;
+  overflow-wrap: anywhere;
+}
+.section-row > .section-drag-handle {
+  width: 22px;
+  flex: 0 0 22px;
+  padding: 5px 0;
+  cursor: grab;
+  touch-action: none;
+  color: #888;
+}
+.section-drag-handle:active {
+  cursor: grabbing;
+}
+.section-row.drop-target {
+  outline: 2px dashed var(--accent);
+}
+.section-order-help {
+  font-size: 11px;
+}
 .section-row.selected {
   background: #fff6ef;
   border-color: #ffcfa9;
