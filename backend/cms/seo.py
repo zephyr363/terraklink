@@ -8,7 +8,8 @@ from django.shortcuts import render
 from django.utils.html import escape
 from django.views.decorators.http import require_GET
 
-from .marketing import active_promo, gallery, localized, products
+from .localization import localized_document
+from .marketing import active_promo, gallery, products
 from .models import SiteContent
 from .seo_serializers import PUBLIC_PAGES
 
@@ -38,15 +39,8 @@ def page_url(base, path, lang):
     return base.rstrip("/") + path + ("?lang=kk" if lang == "kk" else "")
 
 
-def metadata(document, path, lang, fallback_origin):
-    view = localized(document, lang)
-    shared = document.get("seo", {})
-    settings = {**shared, **view.get("seo", {})}
-    base = shared.get("site_url") or fallback_origin.rstrip("/")
-    company = view["company"]
-    items = products(view)
-    product = next((item for item in items if path == "/catalog/" + item["id"]), None)
-    legal_titles = {
+def _legal_titles(lang):
+    return {
         "/legal/privacy": "Политика конфиденциальности" if lang == "ru" else "Құпиялылық саясаты",
         "/legal/terms": "Пользовательское соглашение" if lang == "ru" else "Пайдаланушы келісімі",
         "/legal/consent": "Согласие на обработку данных"
@@ -54,31 +48,43 @@ def metadata(document, path, lang, fallback_origin):
         else "Деректерді өңдеуге келісім",
         "/legal/cookies": "Политика cookies" if lang == "ru" else "Cookies саясаты",
     }
-    legal = path in legal_titles
-    exists = path in PUBLIC_PAGES or product is not None or legal
-    title = dict(zip(PUBLIC_PAGES, PAGE_NAMES[lang])).get(
-        path, legal_titles.get(path, "Страница не найдена" if lang == "ru" else "Бет табылмады")
+
+
+def _page_title(view, shared, path, lang, product, company):
+    """Resolve the page <title> from product SEO, page overrides, or fallback."""
+    legal_titles_map = _legal_titles(lang)
+    default_title = dict(zip(PUBLIC_PAGES, PAGE_NAMES[lang])).get(
+        path, legal_titles_map.get(path, "Страница не найдена" if lang == "ru" else "Бет табылмады")
     )
-    overrides = settings.get("pages", {}).get(path, {})
+    overrides = shared.get("pages", {}).get(path, {})
     if product:
-        title = product.get("seo_title") or product["title"]
-        description = product.get("seo_description") or product.get("text", "")
-    else:
-        title = (
-            overrides.get("title")
-            or (settings.get("title") if path == "/" else "")
-            or f"{title} — {company['name']}"
+        return product.get("seo_title") or product["title"]
+    return (
+        overrides.get("title")
+        or (shared.get("title") if path == "/" else "")
+        or f"{default_title} — {company['name']}"
+    )
+
+
+def _page_description(view, shared, path, lang, product):
+    """Resolve the page <meta description> from product SEO, overrides, or fallback."""
+    overrides = shared.get("pages", {}).get(path, {})
+    if product:
+        return product.get("seo_description") or product.get("text", "")
+    return (
+        overrides.get("description")
+        or shared.get("description")
+        or (
+            "Каталог кирпича и консультации по Казахстану."
+            if lang == "ru"
+            else "Кірпіш каталогы және Қазақстан бойынша кеңес."
         )
-        description = (
-            overrides.get("description")
-            or settings.get("description")
-            or (
-                "Каталог кирпича и консультации по Казахстану."
-                if lang == "ru"
-                else "Кірпіш каталогы және Қазақстан бойынша кеңес."
-            )
-        )
-    indexable = bool(
+    )
+
+
+def _calc_indexable(shared, document, company, exists, path):
+    """Decide whether the page should be indexed by search engines."""
+    return bool(
         shared.get("indexing")
         and shared.get("site_url")
         and not document["company"].get("demo")
@@ -86,6 +92,131 @@ def metadata(document, path, lang, fallback_origin):
         and exists
         and not path.startswith("/legal/")
     )
+
+
+def _build_organization(settings, company, base, absolute):
+    """Build the Schema.org Organization (optionally LocalBusiness) node."""
+    organization = {
+        "@type": "Organization",
+        "@id": base + "/#organization",
+        "name": company["name"],
+        "url": base,
+        "telephone": company["phone"],
+        "email": company["email"],
+        "areaServed": settings.get("areas_served") or ["Казахстан"],
+    }
+    if settings.get("legal_name"):
+        organization["legalName"] = settings["legal_name"]
+    if settings.get("logo"):
+        organization["logo"] = absolute(settings["logo"])
+    if settings.get("same_as"):
+        organization["sameAs"] = settings["same_as"]
+    if not company.get("demo") and settings.get("city"):
+        organization.update(
+            {
+                "@type": "LocalBusiness",
+                "address": {
+                    "@type": "PostalAddress",
+                    "streetAddress": company["address"],
+                    "addressLocality": settings["city"],
+                    "addressRegion": settings.get("region", ""),
+                    "postalCode": settings.get("postal_code", ""),
+                    "addressCountry": "KZ",
+                },
+            }
+        )
+        if settings.get("latitude") is not None and settings.get("longitude") is not None:
+            organization["geo"] = {
+                "@type": "GeoCoordinates",
+                "latitude": settings["latitude"],
+                "longitude": settings["longitude"],
+            }
+    return organization
+
+
+def _build_website(company, base):
+    """Build the Schema.org WebSite node."""
+    return {
+        "@type": "WebSite",
+        "@id": base + "/#website",
+        "url": base,
+        "name": company["name"],
+        "inLanguage": ["ru-KZ", "kk-KZ"],
+    }
+
+
+def _build_product_node(product, images, base, absolute, company, canonical):
+    """Build the Schema.org Product node with price and promo info."""
+    node = {
+        "@type": "Product",
+        "name": product["title"],
+        "sku": product["id"],
+        "description": product.get("text", ""),
+        "url": canonical,
+        "image": [absolute(i["url"]) for i in images],
+        "brand": {"@type": "Brand", "name": company["name"]},
+    }
+    promo = active_promo(product)
+    price = (
+        promo["price"]
+        if promo and promo.get("price") is not None
+        else product.get("price", 0)
+    )
+    return node, price, promo
+
+
+def _build_faq(settings):
+    """Build the Schema.org FAQPage node if FAQs are configured on the home page."""
+    if not settings.get("faq"):
+        return None
+    return {
+        "@type": "FAQPage",
+        "mainEntity": [
+            {
+                "@type": "Question",
+                "name": row["question"],
+                "acceptedAnswer": {"@type": "Answer", "text": row["answer"]},
+            }
+            for row in settings["faq"]
+        ],
+    }
+
+
+def _build_breadcrumbs(company, base, lang, path, product, title):
+    """Build the Schema.org BreadcrumbList node."""
+    elements = [
+        {
+            "@type": "ListItem",
+            "position": 1,
+            "name": company["name"],
+            "item": page_url(base, "/", lang),
+        }
+    ]
+    if path != "/":
+        elements.append(
+            {
+                "@type": "ListItem",
+                "position": 2,
+                "name": product["title"] if product else title,
+                "item": page_url(base, path, lang),
+            }
+        )
+    return {"@type": "BreadcrumbList", "itemListElement": elements}
+
+
+def metadata(document, path, lang, fallback_origin):
+    view = localized_document(document, lang)
+    shared = document.get("seo", {})
+    settings = {**shared, **view.get("seo", {})}
+    base = shared.get("site_url") or fallback_origin.rstrip("/")
+    company = view["company"]
+    items = products(view)
+    product = next((item for item in items if path == "/catalog/" + item["id"]), None)
+
+    title = _page_title(view, shared, path, lang, product, company)
+    description = _page_description(view, shared, path, lang, product)
+    exists = path in PUBLIC_PAGES or product is not None or path in _legal_titles(lang)
+    indexable = _calc_indexable(shared, document, company, exists, path)
     canonical = page_url(base, path, lang)
     images = gallery(product) if product else []
     image = images[0]["url"] if images else settings.get("og_image", "")
@@ -95,67 +226,10 @@ def metadata(document, path, lang, fallback_origin):
 
     nodes = []
     if shared.get("structured_data", True) and exists:
-        organization = {
-            "@type": "Organization",
-            "@id": base + "/#organization",
-            "name": company["name"],
-            "url": base,
-            "telephone": company["phone"],
-            "email": company["email"],
-            "areaServed": settings.get("areas_served") or ["Казахстан"],
-        }
-        if settings.get("legal_name"):
-            organization["legalName"] = settings["legal_name"]
-        if settings.get("logo"):
-            organization["logo"] = absolute(settings["logo"])
-        if settings.get("same_as"):
-            organization["sameAs"] = settings["same_as"]
-        if not company.get("demo") and settings.get("city"):
-            organization.update(
-                {
-                    "@type": "LocalBusiness",
-                    "address": {
-                        "@type": "PostalAddress",
-                        "streetAddress": company["address"],
-                        "addressLocality": settings["city"],
-                        "addressRegion": settings.get("region", ""),
-                        "postalCode": settings.get("postal_code", ""),
-                        "addressCountry": "KZ",
-                    },
-                }
-            )
-            if settings.get("latitude") is not None and settings.get("longitude") is not None:
-                organization["geo"] = {
-                    "@type": "GeoCoordinates",
-                    "latitude": settings["latitude"],
-                    "longitude": settings["longitude"],
-                }
-        nodes += [
-            organization,
-            {
-                "@type": "WebSite",
-                "@id": base + "/#website",
-                "url": base,
-                "name": company["name"],
-                "inLanguage": ["ru-KZ", "kk-KZ"],
-            },
-        ]
+        nodes.append(_build_organization(settings, company, base, absolute))
+        nodes.append(_build_website(company, base))
         if product:
-            node = {
-                "@type": "Product",
-                "name": product["title"],
-                "sku": product["id"],
-                "description": product.get("text", ""),
-                "url": canonical,
-                "image": [absolute(i["url"]) for i in images],
-                "brand": {"@type": "Brand", "name": company["name"]},
-            }
-            promo = active_promo(product)
-            price = (
-                promo["price"]
-                if promo and promo.get("price") is not None
-                else product.get("price", 0)
-            )
+            node, price, promo = _build_product_node(product, images, base, absolute, company, canonical)
             if not company.get("demo"):
                 node["offers"] = {
                     "@type": "Offer",
@@ -164,45 +238,11 @@ def metadata(document, path, lang, fallback_origin):
                     "url": canonical,
                 }
             nodes.append(node)
-        if path == "/" and settings.get("faq"):
-            nodes.append(
-                {
-                    "@type": "FAQPage",
-                    "mainEntity": [
-                        {
-                            "@type": "Question",
-                            "name": row["question"],
-                            "acceptedAnswer": {"@type": "Answer", "text": row["answer"]},
-                        }
-                        for row in settings["faq"]
-                    ],
-                }
-            )
-        nodes.append(
-            {
-                "@type": "BreadcrumbList",
-                "itemListElement": [
-                    {
-                        "@type": "ListItem",
-                        "position": 1,
-                        "name": company["name"],
-                        "item": page_url(base, "/", lang),
-                    },
-                    *(
-                        []
-                        if path == "/"
-                        else [
-                            {
-                                "@type": "ListItem",
-                                "position": 2,
-                                "name": product["title"] if product else title,
-                                "item": canonical,
-                            }
-                        ]
-                    ),
-                ],
-            }
-        )
+        faq_node = _build_faq(settings)
+        if faq_node:
+            nodes.append(faq_node)
+        nodes.append(_build_breadcrumbs(company, base, lang, path, product, title))
+
     return {
         "title": title,
         "description": description,
@@ -216,7 +256,7 @@ def metadata(document, path, lang, fallback_origin):
             if exists
             and (
                 not product
-                or any(item["id"] == product["id"] for item in products(localized(document, code)))
+                or any(item["id"] == product["id"] for item in products(localized_document(document, code)))
             )
         ],
         "structured_data": {"@context": "https://schema.org", "@graph": nodes},
@@ -242,7 +282,7 @@ def public_page(request, path=""):
     document = published()
     lang = language(request)
     meta = metadata(document, path, lang, request.build_absolute_uri("/"))
-    view = localized(document, lang)
+    view = localized_document(document, lang)
     items = products(view)
     product = next((item for item in items if path == "/catalog/" + item["id"]), None)
     schema = (
@@ -307,7 +347,7 @@ def sitemap(request):
         for code in ("ru", "kk"):
             paths = [
                 *PUBLIC_PAGES,
-                *["/catalog/" + quote(item["id"]) for item in products(localized(document, code))],
+                *["/catalog/" + quote(item["id"]) for item in products(localized_document(document, code))],
             ]
             for path in paths:
                 urls.append(
