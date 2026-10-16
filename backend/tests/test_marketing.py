@@ -181,7 +181,7 @@ def test_gallery_crud_promo_round_trip_without_legacy_data_loss(site, document, 
     assert response.status_code == 200, response.data
     saved = response.data["document"]
     saved_item = products(saved)[0]
-    assert saved_item["image"] == "/media/a.jpg"
+    assert saved_item["image"] == products(document)[0]["image"]
     saved_item["images"] = list(reversed(images))
     saved_item["images"][0]["alt"] = "Изменено"
     saved_item["promo"] = None
@@ -189,14 +189,14 @@ def test_gallery_crud_promo_round_trip_without_legacy_data_loss(site, document, 
         "/api/editor/content/", {"revision": 2, "document": saved}, format="json"
     )
     assert response.status_code == 200
-    assert products(response.data["document"])[0]["image"] == "/media/b.jpg"
+    assert products(response.data["document"])[0]["image"] == products(document)[0]["image"]
     saved = response.data["document"]
     products(saved)[0]["images"] = []
     response = editor_api.put(
         "/api/editor/content/", {"revision": 3, "document": saved}, format="json"
     )
     assert response.status_code == 200
-    assert products(response.data["document"])[0]["image"] == ""
+    assert products(response.data["document"])[0]["image"] == products(document)[0]["image"]
     assert gallery(products(response.data["document"])[0]) == []
 
 

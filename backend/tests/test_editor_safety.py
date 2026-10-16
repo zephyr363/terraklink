@@ -108,7 +108,7 @@ def test_branded_admin_login(client):
     response = client.get("/django-admin/login/")
     assert response.status_code == 200
     assert b"TerraKlink Admin" in response.content
-    assert b"cms/admin.css" in response.content
+    assert b"unfold/css/styles.css" in response.content
 
 
 def test_admin_lead_phone_validation():

@@ -43,6 +43,7 @@ import { SectionEditor } from "../features/editor/SectionEditor";
 import { SectionList } from "../features/editor/SectionList";
 import { sectionNames, fonts } from "../features/editor/config";
 import { SeoEditor } from "../components/SeoEditor";
+import { withRecommendedDefaults } from "../domain/defaults";
 import { productImages, withProductImages } from "../domain/products";
 import {
   localizedDocument,
@@ -109,7 +110,14 @@ export function Admin() {
   useEffect(() => {
     // Cached snapshots can arrive after a save; never roll the editor back.
     if (data && data.revision > lastServerRevision.current && !dirty) {
-      setSiteDocument(structuredClone(data.document));
+      const initialized = withRecommendedDefaults(data.document);
+      setSiteDocument(initialized);
+      if (JSON.stringify(initialized) !== JSON.stringify(data.document)) {
+        setDirty(true);
+        setNotice(
+          "Пустые SEO/GEO-поля заполнены стартовыми значениями. Проверьте их и сохраните черновик.",
+        );
+      }
       setRevision(data.revision);
       setPublishedRevision(data.published_revision ?? 0);
       lastServerRevision.current = data.revision;

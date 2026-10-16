@@ -2,7 +2,7 @@
 name = "terraklink"
 version = "0.1.0"
 description = "Corporate brick manufacturer website and content management API"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
   "django>=5.2,<5.3",
   "djangorestframework>=3.16,<3.17",
@@ -12,6 +12,7 @@ dependencies = [
   "pillow>=11,<13",
   "gunicorn>=23,<24; sys_platform != 'win32'",
   "redis>=6,<8",
+  "django-unfold>=0.110,<0.111",
 ]
 
 [dependency-groups]

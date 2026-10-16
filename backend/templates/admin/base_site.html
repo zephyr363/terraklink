@@ -1,6 +1,2 @@
-{% extends "admin/base.html" %}
-{% load static %}
+{% extends "unfold/layouts/base.html" %}
 {% block title %}{{ title }} | TerraKlink Admin{% endblock %}
-{% block branding %}<div id="site-name"><a href="{% url 'admin:index' %}">TerraKlink Admin</a></div>{% endblock %}
-{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'cms/admin.css' %}">{% endblock %}
-{% block nav-global %}<a class="editor-link" href="/admin">Редактор страницы</a>{% endblock %}

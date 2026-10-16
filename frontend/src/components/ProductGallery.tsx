@@ -14,7 +14,18 @@ export function ProductGallery({
   onOpen?: () => void;
 }) {
   const { t } = useTranslation();
-  const images = productImages(item);
+  const gallery = productImages(item);
+  const images =
+    compact && item.image
+      ? [
+          { id: "preview", url: item.image, alt: item.title },
+          ...gallery.filter((image) => image.url !== item.image),
+        ]
+      : gallery.length
+        ? gallery
+        : item.image
+          ? [{ id: "preview", url: item.image, alt: item.title }]
+          : [];
   const [selected, setSelected] = useState(0);
   const index = images.length ? selected % images.length : 0;
   const current = images[index];

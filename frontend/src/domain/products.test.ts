@@ -18,8 +18,8 @@ describe("product marketing rules", () => {
     const changed = withProductImages(item, [
       { id: "side", url: "/side.jpg", alt: "Сбоку" },
     ]);
-    expect(changed.image).toBe("/side.jpg");
-    expect(withProductImages(changed, []).image).toBe("");
+    expect(changed.image).toBe("/cover.jpg");
+    expect(withProductImages(changed, []).image).toBe("/cover.jpg");
     expect(item.image).toBe("/cover.jpg");
   });
   it("uses inclusive campaign dates and honors disabling", () => {

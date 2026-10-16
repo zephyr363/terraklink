@@ -1,0 +1,167 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: ru\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+msgid "Add row"
+msgstr "Добавить строку"
+
+msgid "After you"
+msgstr "После"
+
+msgid "All applications"
+msgstr "Все разделы"
+
+msgid "Apply Filters"
+msgstr "Применить фильтры"
+
+msgid "Available shortcuts"
+msgstr "Сочетания клавиш"
+
+msgid "Changelist shortcuts"
+msgstr "Сочетания клавиш списка"
+
+msgid "Choose file to upload"
+msgstr "Выберите файл для загрузки"
+
+msgid "Clear"
+msgstr "Очистить"
+
+msgid "Clear all filters"
+msgstr "Очистить все фильтры"
+
+msgid "Clear selection"
+msgstr "Снять выделение"
+
+msgid "Click to cancel"
+msgstr "Нажмите для отмены"
+
+msgid "Click to download"
+msgstr "Нажмите для скачивания"
+
+msgid "Close"
+msgstr "Закрыть"
+
+msgid "Command tool shortcuts"
+msgstr "Сочетания клавиш поиска"
+
+msgid "Create new record"
+msgstr "Создать запись"
+
+msgid "Dark"
+msgstr "Тёмная"
+
+msgid "False"
+msgstr "Нет"
+
+msgid "General"
+msgstr "Общее"
+
+msgid "Global shortcuts"
+msgstr "Общие сочетания клавиш"
+
+msgid "Hide counts"
+msgstr "Скрыть количество"
+
+msgid "Image preview"
+msgstr "Предпросмотр изображения"
+
+msgid "Light"
+msgstr "Светлая"
+
+msgid "Navigate"
+msgstr "Перейти"
+
+msgid "No data"
+msgstr "Нет данных"
+
+msgid "No results found"
+msgstr "Ничего не найдено"
+
+msgid "Nothing matched your search"
+msgstr "По вашему запросу ничего не найдено"
+
+msgid "Open command tool"
+msgstr "Открыть поиск"
+
+msgid "Open selection"
+msgstr "Открыть выбранное"
+
+msgid "Open selection in new tab"
+msgstr "Открыть выбранное в новой вкладке"
+
+msgid "Open shortcuts list"
+msgstr "Открыть список сочетаний"
+
+msgid "Recent searches"
+msgstr "Последние поиски"
+
+msgid "Record picture"
+msgstr "Изображение записи"
+
+msgid "Remove from sorting"
+msgstr "Убрать из сортировки"
+
+msgid "Reset filters"
+msgstr "Сбросить фильтры"
+
+msgid "Return to site"
+msgstr "Вернуться на сайт"
+
+msgid "Run"
+msgstr "Выполнить"
+
+msgid "Run the selected action"
+msgstr "Выполнить выбранное действие"
+
+msgid "Search apps and models..."
+msgstr "Поиск разделов и моделей…"
+
+msgid "Select"
+msgstr "Выбрать"
+
+msgid "Show counts"
+msgstr "Показать количество"
+
+msgid "Submit"
+msgstr "Отправить"
+
+msgid "Summary"
+msgstr "Итоги"
+
+msgid "System"
+msgstr "Системная"
+
+msgid "This item will be deleted."
+msgstr "Эта запись будет удалена."
+
+msgid "This page yielded into no results."
+msgstr "На этой странице нет результатов."
+
+msgid "Toggle dark/light mode"
+msgstr "Переключить тему"
+
+msgid "Toggle filter"
+msgstr "Переключить фильтр"
+
+msgid "Toggle password visibility"
+msgstr "Показать или скрыть пароль"
+
+msgid "Toggle sidebar"
+msgstr "Переключить боковую панель"
+
+msgid "Toggle sorting"
+msgstr "Переключить сортировку"
+
+msgid "True"
+msgstr "Да"
+
+msgid "Type to search"
+msgstr "Начните вводить запрос"
+
+msgid "Unknown content"
+msgstr "Неизвестное содержимое"
+
+msgid "You have been successfully logged out from the administration"
+msgstr "Вы вышли из панели управления"

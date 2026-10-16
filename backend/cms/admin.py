@@ -5,6 +5,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.admin import GroupAdmin, UserAdmin
 from django.contrib.auth.models import Group
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
+from unfold.admin import ModelAdmin
+from unfold.forms import AdminPasswordChangeForm, UserChangeForm, UserCreationForm
 
 from .models import ContentRevision, IssuedToken, Lead, MediaAsset, RevokedToken, SiteContent
 from .validators import validate_phone
@@ -46,12 +48,14 @@ admin.site.unregister(Group)
 
 
 @admin.register(get_user_model())
-class RussianUserAdmin(RussianPermissionsMixin, UserAdmin):
-    pass
+class RussianUserAdmin(RussianPermissionsMixin, UserAdmin, ModelAdmin):
+    form = UserChangeForm
+    add_form = UserCreationForm
+    change_password_form = AdminPasswordChangeForm
 
 
 @admin.register(Group)
-class RussianGroupAdmin(RussianPermissionsMixin, GroupAdmin):
+class RussianGroupAdmin(RussianPermissionsMixin, GroupAdmin, ModelAdmin):
     pass
 
 
@@ -67,7 +71,7 @@ class LeadAdminForm(forms.ModelForm):
 
 
 @admin.register(Lead)
-class LeadAdmin(admin.ModelAdmin):
+class LeadAdmin(ModelAdmin):
     form = LeadAdminForm
     list_display = ["name", "phone", "region", "status", "created_at"]
     list_filter = ["status", "created_at"]
@@ -76,7 +80,7 @@ class LeadAdmin(admin.ModelAdmin):
 
 
 @admin.register(ContentRevision)
-class RevisionAdmin(admin.ModelAdmin):
+class RevisionAdmin(ModelAdmin):
     list_display = ["number", "action", "editor", "created_at"]
     readonly_fields = ["site", "number", "snapshot", "action", "editor", "created_at"]
 
@@ -91,7 +95,7 @@ class RevisionAdmin(admin.ModelAdmin):
 
 
 @admin.register(SiteContent)
-class SiteAdmin(admin.ModelAdmin):
+class SiteAdmin(ModelAdmin):
     readonly_fields = ["key", "draft", "published", "revision", "published_revision", "updated_at"]
 
     def has_add_permission(self, request):
@@ -102,7 +106,7 @@ class SiteAdmin(admin.ModelAdmin):
 
 
 @admin.register(MediaAsset)
-class MediaAdmin(admin.ModelAdmin):
+class MediaAdmin(ModelAdmin):
     list_display = ["name", "kind", "created_at"]
     readonly_fields = ["file", "kind", "name", "uploaded_by", "created_at"]
 
@@ -116,7 +120,7 @@ for token_model in (OutstandingToken, BlacklistedToken):
 
 
 @admin.register(IssuedToken)
-class IssuedTokenAdmin(admin.ModelAdmin):
+class IssuedTokenAdmin(ModelAdmin):
     list_display = ["id", "owner", "issued_at", "expires"]
     readonly_fields = ["id", "owner", "identifier", "issued_at", "expires"]
     fields = readonly_fields
@@ -152,7 +156,7 @@ class IssuedTokenAdmin(admin.ModelAdmin):
 
 
 @admin.register(RevokedToken)
-class RevokedTokenAdmin(admin.ModelAdmin):
+class RevokedTokenAdmin(ModelAdmin):
     list_display = ["id", "token_reference", "revoked_at"]
     readonly_fields = ["token_reference", "revoked_at"]
     fields = readonly_fields
@@ -173,3 +177,6 @@ class RevokedTokenAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+from . import product_admin  # noqa: E402, F401

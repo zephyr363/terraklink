@@ -271,6 +271,7 @@ export function SectionEditor({
                     onUpload(file, "image", index, imageId)
                   }
                   onPromoUpload={(file) => onUpload(file, "promo", index)}
+                  onPreviewUpload={(file) => onUpload(file, "image", index)}
                   uploading={uploading}
                 />
               ) : (
