@@ -129,6 +129,7 @@ REST_FRAMEWORK = {
         "user": "600/hour",
         "login": os.getenv("LOGIN_THROTTLE_RATE", "10/hour"),
         "lead": "10/hour",
+        "analytics": "120/hour",
     },
 }
 SIMPLE_JWT = {

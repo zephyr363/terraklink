@@ -5,6 +5,23 @@ from django.db import models
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 
 
+class AnalyticsCounter(models.Model):
+    day = models.DateField("Дата")
+    path = models.CharField("Страница", max_length=120)
+    event = models.CharField("Событие", max_length=20)
+    language = models.CharField("Язык", max_length=2)
+    count = models.PositiveBigIntegerField("Количество", default=0)
+
+    class Meta:
+        verbose_name = "счётчик аналитики"
+        verbose_name_plural = "Аналитика"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["day", "path", "event", "language"], name="unique_daily_analytics"
+            )
+        ]
+
+
 class SiteContent(models.Model):
     key = models.CharField("Ключ сайта", max_length=40, unique=True, default="main")
     draft = models.JSONField("Черновик", default=dict)

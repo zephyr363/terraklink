@@ -1,4 +1,4 @@
-export const CONSENT_VERSION = "2026-10-15";
+export const CONSENT_VERSION = "2026-10-16";
 export interface CookieConsent {
   version: string;
   analytics: boolean;
@@ -26,6 +26,7 @@ export function saveConsent(analytics: boolean): CookieConsent {
   } catch {
     /* Keep the choice in memory when browser storage is unavailable. */
   }
+  window.dispatchEvent(new Event("tk-consent"));
   return value;
 }
 export const cities = [

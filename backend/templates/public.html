@@ -19,7 +19,7 @@
   <a href="/">{{ company.name }}</a><h1>{{ meta.title }}</h1><p>{{ meta.description }}</p>
   <p>{{ summary }}</p><p>{{ company.address }} · {{ company.phone }} · {{ company.email }}</p>
   {% for section in sections %}<section><h2>{{ section.title }}</h2><p>{{ section.subtitle }}</p>{% for item in section.items %}<h3>{{ item.title }}</h3><p>{{ item.text }}</p>{% endfor %}</section>{% endfor %}
-  {% if product %}<p>{{ product.text }}</p><p>{% if promo.price != None %}{{ promo.price }}{% else %}{{ product.price }}{% endif %} ₸</p>{% if promo %}<h2>{{ promo.label }}</h2><p>{{ promo.text }}</p>{% endif %}{% for image in images %}<img class="custom-media" src="{{ image.url }}" alt="{{ image.alt }}">{% endfor %}{% endif %}
+  {% if product %}<p>{{ product.text }}</p><p>{% if promo.price != None %}{{ promo.price }}{% else %}{{ product.price }}{% endif %} ₸</p>{% if promo %}<h2>{{ promo.label }}</h2><p>{{ promo.text }}</p>{% if promo.image %}<img class="promo-image" src="{{ promo.image }}" alt="{{ promo.label }}">{% endif %}{% endif %}{% for image in images %}<img class="custom-media" src="{{ image.url }}" alt="{{ image.alt }}">{% endfor %}{% if product.attributes %}<dl>{% for row in product.attributes %}<dt>{{ row.name }}</dt><dd>{{ row.value }}</dd>{% endfor %}</dl>{% endif %}{% endif %}
   {% if products %}<ul>{% for item in products %}<li><a href="/catalog/{{ item.id }}{% if meta.language == 'kk' %}?lang=kk{% endif %}">{{ item.title }}</a> — {{ item.text }}</li>{% endfor %}</ul>{% endif %}
   {% for row in faq %}<section><h2>{{ row.question }}</h2><p>{{ row.answer }}</p></section>{% endfor %}
 </main></div></body></html>

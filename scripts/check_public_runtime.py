@@ -51,7 +51,7 @@ def check(origin):
             _, asset_headers = get(asset)
             assert "no-cache" in asset_headers.get("Cache-Control", ""), asset
             assert asset_headers.get("X-Content-Type-Options") == "nosniff", asset
-    for path in ("/admin", "/admin/", "/admin/settings"):
+    for path in ("/admin", "/admin/", "/admin/settings", "/analytics", "/analytics/", "/management", "/management/"):
         html, headers = get(path)
         head = Head()
         head.feed(html)
@@ -66,7 +66,7 @@ def check(origin):
     else:
         raise AssertionError("Unknown public pages must return HTTP 404")
     print(
-        "PASS: Nginx public HTML, product routes, RU/KZ, metadata, assets/cache/CSP, admin HTTP 200/noindex, discovery and HTTP 404"
+        "PASS: Nginx public HTML, product routes, RU/KZ, metadata, assets/cache/CSP, editor/analytics/management HTTP 200/noindex, discovery and HTTP 404"
     )
 
 

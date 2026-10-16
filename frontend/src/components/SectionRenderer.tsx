@@ -11,9 +11,15 @@ import { LocalizedLink as Link } from "../i18n/navigation";
 export function ProductCard({
   item,
   onSelect,
+  onCompare,
+  compared,
+  compareDisabled,
 }: {
   item: ContentItem;
   onSelect: (item: ContentItem) => void;
+  onCompare?: (item: ContentItem) => void;
+  compared?: boolean;
+  compareDisabled?: boolean;
 }) {
   const { t } = useTranslation();
   const promo = activePromo(item);
@@ -31,6 +37,16 @@ export function ProductCard({
         <p className="product-code">
           {t("Артикул:")} {item.id.toUpperCase()}
         </p>
+        {onCompare && (
+          <button
+            className="text-button"
+            aria-pressed={compared}
+            disabled={compareDisabled}
+            onClick={() => onCompare(item)}
+          >
+            {t(compared ? "Убрать из сравнения" : "Сравнить")}
+          </button>
+        )}
         <div className="product-bottom">
           <ProductPrice item={item} />
           <button
@@ -52,9 +68,15 @@ function Hero({ section }: { section: Section }) {
     ? section.items
     : [{ image: section.image, title: section.title }];
   const current = slides[index % slides.length];
+  const template =
+    section.banner?.template ?? (section.video ? "video" : "image");
+  const animation = section.banner?.animation ?? "none";
   return (
-    <div className="hero" aria-roledescription={t("карусель")}>
-      {section.video ? (
+    <div
+      className={`hero banner-${template} animation-${animation}`}
+      aria-roledescription={t("карусель")}
+    >
+      {template === "video" && section.video ? (
         <video
           className="hero-image"
           src={section.video}
@@ -67,6 +89,7 @@ function Hero({ section }: { section: Section }) {
         />
       ) : (
         <img
+          key={`${index}-${template}-${animation}`}
           className="hero-image"
           src={current.image || section.image}
           alt={current.title}
@@ -75,8 +98,11 @@ function Hero({ section }: { section: Section }) {
           }}
         />
       )}{" "}
-      {section.subtitle && (
+      {(section.subtitle || template === "overlay" || template === "split") && (
         <div className="hero-caption">
+          {(template === "overlay" || template === "split") && (
+            <h2>{current.title || section.title}</h2>
+          )}
           <p>{section.subtitle}</p>
           <a className="button" href="/catalog">
             {t("Перейти в каталог")}
@@ -84,7 +110,7 @@ function Hero({ section }: { section: Section }) {
           </a>
         </div>
       )}{" "}
-      {!section.video && (
+      {template !== "video" && slides.length > 1 && (
         <>
           <button
             className="hero-arrow previous"

@@ -1,9 +1,15 @@
 from django.urls import path
 
-from . import views
+from . import views, workspace
 from .seo import seo_api
 
 urlpatterns = [
+    path("analytics/events/", workspace.EventsView.as_view()),
+    path("editor/analytics/", workspace.AnalyticsView.as_view()),
+    path("editor/history/", workspace.HistoryView.as_view()),
+    path("editor/restore/", workspace.RestoreView.as_view()),
+    path("editor/library/", workspace.MediaLibraryView.as_view()),
+    path("editor/leads/<int:pk>/", workspace.LeadStatusView.as_view()),
     path("health/", views.health),
     path("config/", views.PublicConfigView.as_view()),
     path("seo/", seo_api),

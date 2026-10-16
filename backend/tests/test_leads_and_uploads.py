@@ -15,7 +15,7 @@ def payload(**overrides):
         "message": "Request",
         "region": "Алматы",
         "consent": True,
-        "consent_version": "2026-10-15",
+        "consent_version": "2026-10-16",
         "honeypot": "",
         **overrides,
     }
@@ -26,7 +26,7 @@ def test_lead_records_consent_and_only_returns_receipt(api):
     assert result.status_code == 201
     assert set(result.data) == {"id", "detail"}
     lead = Lead.objects.get()
-    assert lead.consent_at and lead.consent_version == "2026-10-15"
+    assert lead.consent_at and lead.consent_version == "2026-10-16"
     assert api.get("/api/editor/leads/").status_code == 401
 
 

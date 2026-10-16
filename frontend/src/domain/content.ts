@@ -17,6 +17,7 @@ export interface ProductImage {
   alt: string;
 }
 export interface Promotion {
+  image?: string;
   enabled: boolean;
   label: string;
   text: string;
@@ -48,6 +49,7 @@ export interface SeoSettings {
   yandex_verification?: string;
 }
 export interface ContentItem {
+  attributes?: { name: string; value: string }[];
   images?: ProductImage[];
   promo?: Promotion | null;
   seo_title?: string;
@@ -61,6 +63,10 @@ export interface ContentItem {
   tag: string;
 }
 export interface Section {
+  banner?: {
+    template: "image" | "overlay" | "split" | "video";
+    animation: "none" | "fade" | "slide" | "zoom";
+  };
   id: string;
   type: SectionType;
   title: string;

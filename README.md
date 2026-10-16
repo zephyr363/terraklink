@@ -6,6 +6,9 @@
 
 ## Локальный запуск без Docker
 
+Возможности отдельных приложений `/analytics`, `/management`, шаблоны баннеров,
+характеристики и сравнение товаров описаны в [docs/workspaces.md](docs/workspaces.md).
+
 Нужны uv, Node.js 24 и npm. Команды PowerShell из корня проекта:
 
 ```powershell

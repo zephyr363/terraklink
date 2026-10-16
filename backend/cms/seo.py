@@ -288,7 +288,7 @@ def robots(request):
     seo = document.get("seo", {})
     enabled = seo.get("indexing") and seo.get("site_url") and not document["company"].get("demo")
     text = "User-agent: *\n" + (
-        "Allow: /\nDisallow: /admin\nDisallow: /django-admin/\nDisallow: /api/\n"
+        "Allow: /\nDisallow: /admin\nDisallow: /analytics\nDisallow: /management\nDisallow: /django-admin/\nDisallow: /api/\n"
         if enabled
         else "Disallow: /\n"
     )

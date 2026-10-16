@@ -11,7 +11,9 @@ export function languageHref(path: string, language: Language) {
     !path.startsWith("/") ||
     path.startsWith("//") ||
     path.startsWith("/admin") ||
-    path.startsWith("/django-admin")
+    path.startsWith("/django-admin") ||
+    path.startsWith("/analytics") ||
+    path.startsWith("/management")
   )
     return path;
   const url = new URL(path, window.location.origin);

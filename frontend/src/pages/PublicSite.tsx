@@ -21,7 +21,9 @@ import {
 import { ProductGallery } from "../components/ProductGallery";
 import { ProductPrice } from "../components/ProductPrice";
 import { activePromo } from "../domain/products";
+import { filterProducts, type CatalogFilter } from "../domain/catalog";
 import { Seo } from "../components/Seo";
+import { AnalyticsTracker } from "../components/AnalyticsTracker";
 import {
   ArrowRight,
   Blocks,
@@ -106,6 +108,10 @@ export function PublicSite({
   const [menuOpen, setMenuOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("Все");
+  const [comparedIds, setComparedIds] = useState<string[]>([]);
+  const [catalogFilter, setCatalogFilter] = useState<
+    Omit<CatalogFilter, "search" | "category">
+  >({ min: "", max: "", promoOnly: false, sort: "default" });
   const [searchOpen, setSearchOpen] = useState(false);
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -142,6 +148,21 @@ export function PublicSite({
     ...new Map(catalog.map((item) => [item.id, item])).values(),
   ];
   const sections = document.sections.filter((section) => section.visible);
+  const filteredProducts = filterProducts(products, {
+    ...catalogFilter,
+    search,
+    category,
+  });
+  const comparedProducts = products.filter((item) =>
+    comparedIds.includes(item.id),
+  );
+  const attributeNames = [
+    ...new Set(
+      comparedProducts.flatMap((item) =>
+        (item.attributes ?? []).map((row) => row.name),
+      ),
+    ),
+  ];
   const categories = [
     "Все",
     ...new Set(products.map((product) => product.category)),
@@ -177,6 +198,7 @@ export function PublicSite({
   };
   return (
     <LanguageContext.Provider value={{ language }}>
+      {!previewDocument && <AnalyticsTracker />}
       <div
         lang={language}
         className="public-site"
@@ -378,9 +400,29 @@ export function PublicSite({
                 <p className="multiline">{detailProduct.text}</p>
                 {detailPromo && (
                   <aside className="product-promo">
+                    {detailPromo.image && (
+                      <img
+                        className="promo-image"
+                        src={detailPromo.image}
+                        alt={detailPromo.label}
+                      />
+                    )}
                     <h2>{detailPromo.label}</h2>
                     <p>{detailPromo.text}</p>
                   </aside>
+                )}
+                {!!detailProduct.attributes?.length && (
+                  <>
+                    <h2>{t("Характеристики")}</h2>
+                    <dl>
+                      {detailProduct.attributes.map((row) => (
+                        <div key={row.name}>
+                          <dt>{row.name}</dt>
+                          <dd>{row.value}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </>
                 )}
                 <p className="detail-price">
                   <ProductPrice item={detailProduct} />
@@ -429,30 +471,178 @@ export function PublicSite({
                   </button>
                 ))}
               </div>
-              <div className="product-grid">
-                {products
-                  .filter(
-                    (item) =>
-                      (category === "Все" || item.category === category) &&
-                      `${item.title} ${item.id}`
-                        .toLowerCase()
-                        .includes(search.toLowerCase()),
-                  )
-                  .map((item) => (
-                    <ProductCard
-                      key={item.id}
-                      item={item}
-                      onSelect={setSelected}
-                    />
-                  ))}
+              <div className="catalog-filters">
+                <label>
+                  {t("Цена от, ₸")}
+                  <input
+                    type="number"
+                    min="0"
+                    max="99999999"
+                    step="0.01"
+                    value={catalogFilter.min}
+                    onChange={(e) =>
+                      setCatalogFilter({
+                        ...catalogFilter,
+                        min: e.target.value,
+                      })
+                    }
+                  />
+                </label>
+                <label>
+                  {t("Цена до, ₸")}
+                  <input
+                    type="number"
+                    min="0"
+                    max="99999999"
+                    step="0.01"
+                    value={catalogFilter.max}
+                    onChange={(e) =>
+                      setCatalogFilter({
+                        ...catalogFilter,
+                        max: e.target.value,
+                      })
+                    }
+                  />
+                </label>
+                <label>
+                  {t("Сортировка")}
+                  <select
+                    value={catalogFilter.sort}
+                    onChange={(e) =>
+                      setCatalogFilter({
+                        ...catalogFilter,
+                        sort: e.target.value as CatalogFilter["sort"],
+                      })
+                    }
+                  >
+                    <option value="default">{t("По умолчанию")}</option>
+                    <option value="price-asc">{t("Сначала дешевле")}</option>
+                    <option value="price-desc">{t("Сначала дороже")}</option>
+                    <option value="name">{t("По названию")}</option>
+                  </select>
+                </label>
+                <label className="checkbox">
+                  <input
+                    type="checkbox"
+                    checked={catalogFilter.promoOnly}
+                    onChange={(e) =>
+                      setCatalogFilter({
+                        ...catalogFilter,
+                        promoOnly: e.target.checked,
+                      })
+                    }
+                  />
+                  {t("Только акции")}
+                </label>
+                <button
+                  className="text-button"
+                  onClick={() => {
+                    setCatalogFilter({
+                      min: "",
+                      max: "",
+                      promoOnly: false,
+                      sort: "default",
+                    });
+                    setSearch("");
+                    setCategory("Все");
+                  }}
+                >
+                  {t("Сбросить фильтры")}
+                </button>
               </div>
-              {!products.some(
-                (item) =>
-                  (category === "Все" || item.category === category) &&
-                  `${item.title} ${item.id}`
-                    .toLowerCase()
-                    .includes(search.toLowerCase()),
-              ) && (
+              {catalogFilter.min &&
+                catalogFilter.max &&
+                Number(catalogFilter.min) > Number(catalogFilter.max) && (
+                  <p role="alert">
+                    {t("Минимальная цена больше максимальной.")}
+                  </p>
+                )}
+              <p className="muted">
+                {t("Найдено товаров:")} {filteredProducts.length}
+              </p>
+              {!!comparedProducts.length && (
+                <section className="comparison">
+                  <h2>{t("Сравнение товаров")}</h2>
+                  <p>{t("Выберите до четырёх товаров для сравнения.")}</p>
+                  <button
+                    className="text-button"
+                    onClick={() => setComparedIds([])}
+                  >
+                    {t("Очистить сравнение")}
+                  </button>
+                  <div className="table-scroll">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>{t("Характеристики")}</th>
+                          {comparedProducts.map((item) => (
+                            <th key={item.id}>
+                              {item.title}
+                              <button
+                                className="text-button"
+                                aria-label={`${t("Убрать из сравнения")} ${item.title}`}
+                                onClick={() =>
+                                  setComparedIds(
+                                    comparedIds.filter((id) => id !== item.id),
+                                  )
+                                }
+                              >
+                                ×
+                              </button>
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <th>{t("Цена, ₸")}</th>
+                          {comparedProducts.map((item) => (
+                            <td key={item.id}>
+                              <ProductPrice item={item} />
+                            </td>
+                          ))}
+                        </tr>
+                        {attributeNames.map((name) => (
+                          <tr key={name}>
+                            <th>{name}</th>
+                            {comparedProducts.map((item) => (
+                              <td key={item.id}>
+                                {item.attributes?.find(
+                                  (row) => row.name === name,
+                                )?.value ?? "—"}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+              )}
+              <div className="product-grid">
+                {filteredProducts.map((item) => (
+                  <ProductCard
+                    key={item.id}
+                    item={item}
+                    onSelect={setSelected}
+                    compared={comparedIds.includes(item.id)}
+                    compareDisabled={
+                      comparedProducts.length >= 4 &&
+                      !comparedIds.includes(item.id)
+                    }
+                    onCompare={(item) =>
+                      setComparedIds((ids) =>
+                        ids.includes(item.id)
+                          ? ids.filter((id) => id !== item.id)
+                          : ids.length < 4
+                            ? [...ids, item.id]
+                            : ids,
+                      )
+                    }
+                  />
+                ))}
+              </div>
+              {!filteredProducts.length && (
                 <p className="empty-state">
                   {t(
                     "Ничего не найдено. Попробуйте другое название или категорию.",
@@ -679,6 +869,13 @@ export function PublicSite({
             </p>
             {activePromo(selected) && (
               <aside className="product-promo">
+                {activePromo(selected)!.image && (
+                  <img
+                    className="promo-image"
+                    src={activePromo(selected)!.image}
+                    alt={activePromo(selected)!.label}
+                  />
+                )}
                 <h3>{activePromo(selected)!.label}</h3>
                 <p>{activePromo(selected)!.text}</p>
               </aside>

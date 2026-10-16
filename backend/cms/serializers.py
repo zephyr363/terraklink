@@ -4,6 +4,7 @@ import re
 
 from rest_framework import serializers
 
+from .consent import CONSENT_VERSION
 from .models import Lead
 from .seo_serializers import SeoSerializer
 from .validators import validate_media_url, validate_phone
@@ -16,6 +17,9 @@ class ProductImageSerializer(serializers.Serializer):
 
 
 class PromoSerializer(serializers.Serializer):
+    image = serializers.CharField(
+        max_length=1000, allow_blank=True, required=False, validators=[validate_media_url]
+    )
     enabled = serializers.BooleanField()
     label = serializers.CharField(max_length=80, allow_blank=True)
     text = serializers.CharField(max_length=1000, allow_blank=True)
@@ -35,7 +39,13 @@ class PromoSerializer(serializers.Serializer):
         return attrs
 
 
+class AttributeSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=80)
+    value = serializers.CharField(max_length=200)
+
+
 class ItemSerializer(serializers.Serializer):
+    attributes = AttributeSerializer(many=True, required=False)
     id = serializers.RegexField(r"^[a-zA-Z0-9_-]{1,80}$")
     title = serializers.CharField(max_length=200)
     text = serializers.CharField(max_length=2000, required=False, allow_blank=True, default="")
@@ -57,6 +67,13 @@ class ItemSerializer(serializers.Serializer):
     seo_description = serializers.CharField(max_length=320, allow_blank=True, required=False)
 
     def validate(self, attrs):
+        attributes = attrs.get("attributes", [])
+        if len(attributes) > 20 or len({row["name"].casefold() for row in attributes}) != len(
+            attributes
+        ):
+            raise serializers.ValidationError(
+                {"attributes": "Не более 20 характеристик с уникальными названиями."}
+            )
         images = attrs.get("images", [])
         if len(images) > 12 or len({image["id"] for image in images}) != len(images):
             raise serializers.ValidationError(
@@ -72,7 +89,13 @@ class ItemSerializer(serializers.Serializer):
         return attrs
 
 
+class BannerSerializer(serializers.Serializer):
+    template = serializers.ChoiceField(choices=["image", "overlay", "split", "video"])
+    animation = serializers.ChoiceField(choices=["none", "fade", "slide", "zoom"])
+
+
 class SectionSerializer(serializers.Serializer):
+    banner = BannerSerializer(required=False)
     id = serializers.RegexField(r"^[a-zA-Z0-9_-]{1,80}$")
     type = serializers.ChoiceField(
         choices=[
@@ -109,6 +132,13 @@ class SectionSerializer(serializers.Serializer):
         if len(value) > 100 or len({i["id"] for i in value}) != len(value):
             raise serializers.ValidationError("Не более 100 элементов с уникальными ID.")
         return value
+
+    def validate(self, attrs):
+        if attrs.get("banner", {}).get("template") == "video" and not attrs["video"]:
+            raise serializers.ValidationError(
+                {"video": "Для видеобаннера загрузите видео или укажите ссылку."}
+            )
+        return attrs
 
 
 class ThemeSerializer(serializers.Serializer):
@@ -200,7 +230,7 @@ class LeadSerializer(serializers.ModelSerializer):
         return value
 
     def validate_consent_version(self, value):
-        if value != "2026-10-15":
+        if value != CONSENT_VERSION:
             raise serializers.ValidationError("Обновите страницу и прочитайте актуальное согласие.")
         return value
 
