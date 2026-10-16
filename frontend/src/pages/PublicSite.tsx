@@ -12,7 +12,7 @@ import {
   useState,
   type CSSProperties,
 } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useNavigation } from "react-router-dom";
 import {
   LocalizedLink as Link,
   LocalizedNavLink as NavLink,
@@ -20,6 +20,7 @@ import {
 } from "../i18n/navigation";
 import { ProductGallery } from "../components/ProductGallery";
 import { ProductPrice } from "../components/ProductPrice";
+import { BrickLoadingScreen } from "../components/BrickLoadingScreen";
 import { activePromo } from "../domain/products";
 import { filterProducts, type CatalogFilter } from "../domain/catalog";
 import { Seo } from "../components/Seo";
@@ -64,10 +65,12 @@ export function PublicSite({
   previewLanguage?: Language;
 }) {
   const { language, setLanguage, t } = useSiteLanguage(previewLanguage);
-  const { data, isLoading, isError, refetch } = usePublicContentQuery(
+  const { data, isLoading } = usePublicContentQuery(
     undefined,
     { skip: !!previewDocument },
   );
+  const navigation = useNavigation();
+  const isRouteNavigating = navigation.state === "loading";
   const sourceDocument = previewDocument ?? data?.document;
   const document = sourceDocument
     ? localizedDocument(sourceDocument, language)
@@ -122,22 +125,16 @@ export function PublicSite({
         : "Все",
     );
   }, [currentUrl.pathname, currentUrl.search, language]);
-  if (!document)
+  if (!document || isRouteNavigating)
     return (
       <div className="load-screen">
-        {isLoading ? (
-          t("Загружаем сайт…")
-        ) : isError ? (
-          <>
-            <h1>{t("Сайт временно недоступен")}</h1>
-            <p>{t("Не удалось загрузить опубликованный контент.")}</p>
-            <button className="button" onClick={() => refetch()}>
-              {t("Повторить")}
-            </button>
-          </>
-        ) : (
-          t("Контент ещё не опубликован.")
-        )}
+        <BrickLoadingScreen
+          message={
+            isLoading || isRouteNavigating
+              ? t("Загружаем сайт…")
+              : t("Контент ещё не опубликован.")
+          }
+        />
       </div>
     );
   const company = document.company;

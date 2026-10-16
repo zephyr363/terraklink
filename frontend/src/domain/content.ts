@@ -18,6 +18,7 @@ export interface ProductImage {
 }
 export interface Promotion {
   image?: string;
+  video?: string;
   enabled: boolean;
   label: string;
   text: string;
