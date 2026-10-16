@@ -1,4 +1,4 @@
-import type { ContentItem, ProductImage } from "./content";
+import type { ContentItem, ProductImage, ProductListItem } from "./content";
 
 export function productImages(item: ContentItem): ProductImage[] {
   return (
@@ -27,4 +27,36 @@ export function activePromo(
     (!promo.ends_on || promo.ends_on >= today)
     ? promo
     : null;
+}
+
+export function formatPrice(
+  price: string | number,
+  language: string,
+): string {
+  return Number(price).toLocaleString(language === "kk" ? "kk-KZ" : "ru-RU", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+export function toContentItem(item: ProductListItem): ContentItem {
+  return {
+    id: item.code,
+    title: item.title,
+    text: item.text,
+    image: item.preview,
+    category: item.category,
+    price: item.price,
+    tag: item.tag,
+    attributes: item.attributes,
+    images: item.images,
+    promo: item.promo
+      ? {
+          ...item.promo,
+          price: item.promo.price,
+        }
+      : null,
+    seo_title: item.seo_title,
+    seo_description: item.seo_description,
+  };
 }
