@@ -1,8 +1,25 @@
 import { describe, expect, it } from "vitest";
-import { moveSection, newSection } from "./content";
+import { moveSection, newSection, placeSection } from "./content";
 import { nearestCity } from "./consent";
 
 describe("editor order", () => {
+  it("places sections at first/last positions without mutation and rejects invalid positions", () => {
+    const sections = [
+      newSection("hero"),
+      newSection("catalog"),
+      newSection("projects"),
+    ];
+    expect(
+      placeSection(sections, sections[0].id, 3).map((s) => s.type),
+    ).toEqual(["catalog", "projects", "hero"]);
+    expect(
+      placeSection(sections, sections[2].id, 1).map((s) => s.type),
+    ).toEqual(["projects", "hero", "catalog"]);
+    expect(sections[0].type).toBe("hero");
+    for (const position of [0, 4, 1.5, NaN, Infinity, 1])
+      expect(placeSection(sections, sections[0].id, position)).toBe(sections);
+    expect(placeSection(sections, "missing", 1)).toBe(sections);
+  });
   it("moves the chosen section without mutating its source", () => {
     const sections = [
       newSection("hero"),

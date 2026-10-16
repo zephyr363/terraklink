@@ -33,3 +33,4 @@ frontend/*.tsbuildinfo
 reference*.html
 reference*.css
 docs/screenshots/
+graphify-out/
