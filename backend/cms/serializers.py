@@ -20,6 +20,9 @@ class PromoSerializer(serializers.Serializer):
     image = serializers.CharField(
         max_length=1000, allow_blank=True, required=False, validators=[validate_media_url]
     )
+    video = serializers.CharField(
+        max_length=1000, allow_blank=True, required=False, validators=[validate_media_url]
+    )
     enabled = serializers.BooleanField()
     label = serializers.CharField(max_length=80, allow_blank=True)
     text = serializers.CharField(max_length=1000, allow_blank=True)
@@ -36,6 +39,8 @@ class PromoSerializer(serializers.Serializer):
             raise serializers.ValidationError("Конец акции не может быть раньше начала.")
         if attrs["enabled"] and not attrs["label"].strip():
             raise serializers.ValidationError({"label": "Укажите название промо."})
+        if attrs.get("video") and not attrs.get("label", "").strip():
+            raise serializers.ValidationError({"label": "Укажите название промо для видео."})
         return attrs
 
 

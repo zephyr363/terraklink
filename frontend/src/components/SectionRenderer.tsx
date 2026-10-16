@@ -5,6 +5,7 @@ import type { ContentItem, Section } from "../domain/content";
 import { LeadForm } from "./LeadForm";
 import { ProductGallery } from "./ProductGallery";
 import { ProductPrice } from "./ProductPrice";
+import { ProductPromo } from "./ProductPromo";
 import { activePromo } from "../domain/products";
 import { LocalizedLink as Link } from "../i18n/navigation";
 
@@ -25,8 +26,11 @@ export function ProductCard({
   const promo = activePromo(item);
   return (
     <article className="product-card">
-      {(promo?.label || item.tag) && (
-        <span className="product-tag">{promo?.label || item.tag}</span>
+      {item.tag && (
+        <span className="product-tag">{item.tag}</span>
+      )}
+      {promo && (
+        <div className="product-tag product-tag--promo">{promo.label}</div>
       )}
       <ProductGallery item={item} compact onOpen={() => onSelect(item)} />
       <div className="product-body">
@@ -47,6 +51,7 @@ export function ProductCard({
             {t(compared ? "Убрать из сравнения" : "Сравнить")}
           </button>
         )}
+        <ProductPromo item={item} />
         <div className="product-bottom">
           <ProductPrice item={item} />
           <button

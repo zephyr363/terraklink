@@ -45,4 +45,33 @@ describe("product marketing rules", () => {
       ),
     ).toBeNull();
   });
+  it("returns promo video when campaign is active", () => {
+    const product = {
+      ...item,
+      promo: {
+        enabled: true,
+        label: "Акция",
+        text: "",
+        price: null,
+        video: "/promo.mp4",
+        starts_on: "2026-10-01",
+        ends_on: "2026-10-15",
+      },
+    };
+    expect(activePromo(product, "2026-10-10")?.video).toBe("/promo.mp4");
+    expect(activePromo(product, "2026-10-16")).toBeNull();
+  });
+  it("treats promo as inactive when video exists but campaign disabled", () => {
+    const product = {
+      ...item,
+      promo: {
+        enabled: false,
+        label: "Акция",
+        text: "",
+        price: null,
+        video: "/promo.mp4",
+      },
+    };
+    expect(activePromo(product, "2026-10-10")).toBeNull();
+  });
 });
