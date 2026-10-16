@@ -2,9 +2,11 @@ import uuid
 from pathlib import Path
 
 from django.conf import settings
-from django.db import connection
+from django.core.paginator import EmptyPage, Paginator
+from django.db import connection, models
 from django.http import JsonResponse
 from django.middleware.csrf import get_token
+from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 from PIL import Image, UnidentifiedImageError
@@ -18,8 +20,13 @@ from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import Lead, MediaAsset, SiteContent
-from .serializers import DocumentSerializer, LeadSerializer, SaveSerializer
+from .models import Lead, MediaAsset, Product, SiteContent
+from .serializers import (
+    DocumentSerializer,
+    LeadSerializer,
+    ProductSerializer,
+    SaveSerializer,
+)
 from .services import update_content
 
 
@@ -240,3 +247,83 @@ class CreateLeadView(APIView):
         serializer.is_valid(raise_exception=True)
         lead = serializer.save()
         return Response({"id": lead.pk, "detail": "Заявка принята"}, status=status.HTTP_201_CREATED)
+
+
+class ProductListView(APIView):
+    """Список товаров с пагинацией и фильтрами."""
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "anon"
+
+    def get(self, request):
+        language = request.query_params.get("language", "ru")
+        queryset = Product.objects.filter(language=language).order_by("section_id", "code")
+
+        category = request.query_params.get("category")
+        if category:
+            queryset = queryset.filter(category=category)
+
+        search = request.query_params.get("search")
+        if search:
+            queryset = queryset.filter(
+                models.Q(title__icontains=search)
+                | models.Q(code__icontains=search)
+                | models.Q(text__icontains=search)
+            )
+
+        min_price = request.query_params.get("min_price")
+        if min_price:
+            queryset = queryset.filter(price__gte=min_price)
+
+        max_price = request.query_params.get("max_price")
+        if max_price:
+            queryset = queryset.filter(price__lte=max_price)
+
+        promo_only = request.query_params.get("promo_only")
+        if promo_only == "true":
+            queryset = queryset.filter(promo__enabled=True)
+
+        sort = request.query_params.get("sort", "default")
+        if sort == "price-asc":
+            queryset = queryset.order_by("price")
+        elif sort == "price-desc":
+            queryset = queryset.order_by("-price")
+        elif sort == "name":
+            queryset = queryset.order_by("title")
+
+        page_size = int(request.query_params.get("page_size", 12))
+        page_number = int(request.query_params.get("page", 1))
+
+        paginator = Paginator(queryset, page_size)
+        try:
+            page = paginator.page(page_number)
+        except EmptyPage:
+            page = paginator.page(paginator.num_pages)
+
+        serializer = ProductSerializer(page.object_list, many=True)
+        return Response(
+            {
+                "count": paginator.count,
+                "page_size": page_size,
+                "page": page.number,
+                "total_pages": paginator.num_pages,
+                "has_next": page.has_next(),
+                "has_previous": page.has_previous(),
+                "results": serializer.data,
+            }
+        )
+
+
+class ProductDetailView(APIView):
+    """Одна карточка товара по коду (артикулу)."""
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def get(self, request, code):
+        language = request.query_params.get("language", "ru")
+        product = get_object_or_404(Product, code=code, language=language)
+        serializer = ProductSerializer(product)
+        return Response(serializer.data)
