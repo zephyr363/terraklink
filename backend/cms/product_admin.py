@@ -68,9 +68,21 @@ def store_photo(file, user):
 
 
 def store_video(file, user):
+    if not file:
+        return file
+    if file.size > settings.MAX_VIDEO_UPLOAD_MB * 1024 * 1024:
+        raise ValidationError(
+            f"Видео должно быть не больше {settings.MAX_VIDEO_UPLOAD_MB} МБ."
+        )
     suffix = Path(file.name).suffix.lower()
     if suffix not in {".mp4", ".webm"}:
         raise ValidationError("Разрешены MP4 и WebM.")
+    header = file.read(32)
+    if not (
+        (suffix == ".mp4" and header[4:8] == b"ftyp")
+        or (suffix == ".webm" and header[:4] == b"\x1aE\xdf\xa3")
+    ):
+        raise ValidationError("Некорректный видеофайл.")
     file.seek(0)
     original = file.name[:200]
     file.name = uuid.uuid4().hex + suffix

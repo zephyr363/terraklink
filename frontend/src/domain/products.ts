@@ -28,3 +28,13 @@ export function activePromo(
     ? promo
     : null;
 }
+
+export function formatPrice(
+  price: string | number,
+  language: string,
+): string {
+  return Number(price).toLocaleString(language === "kk" ? "kk-KZ" : "ru-RU", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
