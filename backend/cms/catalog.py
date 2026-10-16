@@ -4,18 +4,15 @@ from copy import deepcopy
 
 from django.db import transaction
 
+from .localization import localized_sections_root
 from .models import Product, ProductImage
-
-
-def localized(document, language):
-    return document if language == "ru" else document.get("translations", {}).get("kk", {})
 
 
 @transaction.atomic
 def sync_products(document):
     retained = []
     for language in ("ru", "kk"):
-        for section in localized(document, language).get("sections", []):
+        for section in localized_sections_root(document, language).get("sections", []):
             if section["type"] != "catalog":
                 continue
             for item in section["items"]:
@@ -84,7 +81,7 @@ def patch_product(document, product, *, delete=False):
     result = deepcopy(document)
     section = next(
         s
-        for s in localized(result, product.language)["sections"]
+        for s in localized_sections_root(result, product.language)["sections"]
         if s["id"] == product.section_id and s["type"] == "catalog"
     )
     previous = next(

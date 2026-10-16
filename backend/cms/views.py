@@ -5,6 +5,7 @@ from django.conf import settings
 from django.db import connection
 from django.http import JsonResponse
 from django.middleware.csrf import get_token
+from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 from PIL import Image, UnidentifiedImageError
@@ -124,7 +125,7 @@ class PublicContentView(APIView):
     authentication_classes = []
 
     def get(self, request):
-        site = SiteContent.objects.get(key="main")
+        site = get_object_or_404(SiteContent, key="main")
         return Response({"document": site.published, "revision": site.published_revision})
 
 
@@ -132,7 +133,7 @@ class EditorContentView(APIView):
     permission_classes = [IsAdminUser]
 
     def get(self, request):
-        site = SiteContent.objects.get(key="main")
+        site = get_object_or_404(SiteContent, key="main")
         response = Response(
             {
                 "document": site.draft,
@@ -165,7 +166,7 @@ class PublishView(APIView):
         revision = serializers.IntegerField(min_value=1).run_validation(
             request.data.get("revision")
         )
-        site = SiteContent.objects.get(key="main")
+        site = get_object_or_404(SiteContent, key="main")
         validator = DocumentSerializer(data=site.draft)
         validator.is_valid(raise_exception=True)
         site = update_content(expected_revision=revision, editor=request.user, publish=True)

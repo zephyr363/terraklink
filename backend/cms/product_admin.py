@@ -11,7 +11,8 @@ from django.utils.html import format_html
 from PIL import Image, UnidentifiedImageError
 from unfold.admin import ModelAdmin, TabularInline
 
-from .catalog import localized, patch_product
+from .catalog import patch_product
+from .localization import localized_sections_root
 from .models import MediaAsset, Product, ProductImage, SiteContent
 from .serializers import ItemSerializer
 from .services import update_content
@@ -98,7 +99,7 @@ class ProductForm(forms.ModelForm):
         language = self.data.get("language") or self.instance.language or "ru"
         self.fields["section_id"].choices = [
             (s["id"], s["title"] or s["id"])
-            for s in localized(self.site.draft, language).get("sections", [])
+            for s in localized_sections_root(self.site.draft, language).get("sections", [])
             if s["type"] == "catalog"
         ]
         if not self.instance.pk:
@@ -171,7 +172,7 @@ class ProductForm(forms.ModelForm):
         section = next(
             (
                 s
-                for s in localized(self.site.draft, data.get("language", "ru")).get("sections", [])
+                for s in localized_sections_root(self.site.draft, data.get("language", "ru")).get("sections", [])
                 if s["id"] == data.get("section_id")
             ),
             None,

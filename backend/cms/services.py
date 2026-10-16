@@ -28,6 +28,12 @@ def update_content(*, expected_revision, editor, document=None, publish=False):
         changes["draft"] = snapshot
     if not SiteContent.objects.filter(pk=site.pk, revision=expected_revision).update(**changes):
         raise RevisionConflict()
+    # Synchronize the native Product/ProductImage projection inside the same atomic
+    # transaction so a catalog failure rolls back the content revision too.
+    if not publish:
+        from .catalog import sync_products
+
+        sync_products(snapshot)
     ContentRevision.objects.create(
         site=site,
         number=expected_revision + 1,
@@ -36,8 +42,4 @@ def update_content(*, expected_revision, editor, document=None, publish=False):
         editor=editor,
     )
     site.refresh_from_db()
-    if not publish:
-        from .catalog import sync_products
-
-        sync_products(site.draft)
     return site

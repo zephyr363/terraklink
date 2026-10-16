@@ -32,16 +32,3 @@ def active_promo(item, today=None):
     if promo.get("ends_on") and str(promo["ends_on"]) < today:
         return None
     return promo
-
-
-def localized(document, language):
-    translation = document.get("translations", {}).get(language, {})
-    return (
-        {
-            **document,
-            **translation,
-            "seo": {**document.get("seo", {}), **translation.get("seo", {})},
-        }
-        if language == "kk"
-        else document
-    )
