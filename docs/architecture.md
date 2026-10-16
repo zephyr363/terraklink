@@ -69,3 +69,7 @@ uv устанавливает Python-зависимости из lock-файла
 Рабочий Alpine-образ получает только venv и приложение; uv и dev-зависимости
 остаются в build/test. Общая последовательность запуска находится в
 `infra/backend-start.sh`, а Compose описывает сервисы, сеть, зависимости и тома.
+
+## Native-каталог
+
+`Product`/`ProductImage` — транзакционно обновляемое представление `SiteContent.draft` для Django Unfold. Native-формы пишут через `update_content`, как React-редактор; опубликованный каталог по-прежнему берётся из снимка документа. Подробности и ограничения: [native-catalog.md](native-catalog.md).

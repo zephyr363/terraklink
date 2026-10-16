@@ -142,7 +142,7 @@ test("gallery CRUD, scheduled promotions, product pages and editable search meta
     ).toBeVisible();
     await expect(card.locator(".product-gallery > img")).toHaveAttribute(
       "alt",
-      "Фасад — второе фото",
+      product.title,
     );
     await card.getByRole("button", { name: "Следующее фото" }).click();
     await expect(card.locator(".gallery-count")).toHaveText("2 / 2");
@@ -219,7 +219,9 @@ test("gallery CRUD, scheduled promotions, product pages and editable search meta
     ).toBeVisible();
     await page.goto(`/catalog/${product.id}`);
     await page.reload();
-    await expect(page.getByText("Фото пока нет")).toBeVisible();
+    await expect(
+      page.locator(".product-detail-page .product-gallery > img"),
+    ).toHaveAttribute("src", product.image);
   } finally {
     if (access && originalDraft) {
       await saveViaApi(original, true);
@@ -231,6 +233,7 @@ test("gallery CRUD, scheduled promotions, product pages and editable search meta
 test("native admin exposes Russian content and token labels", async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/django-admin/");
   await page.getByLabel("Имя пользователя").fill("editor");
   await page
@@ -247,9 +250,12 @@ test("native admin exposes Russian content and token labels", async ({
     "Отозванные токены",
   ])
     await expect(
-      page.getByRole("link", { name: label, exact: true }),
+      page.getByRole("link", { name: label, exact: true }).first(),
     ).toBeVisible();
-  await page.getByRole("link", { name: "Медиафайлы", exact: true }).click();
+  await page
+    .getByRole("link", { name: "Медиафайлы", exact: true })
+    .first()
+    .click();
   await expect(
     page.getByRole("columnheader", { name: "Тип файла" }),
   ).toBeVisible();

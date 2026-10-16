@@ -7,12 +7,14 @@ export function ProductEditor({
   onChange,
   onUpload,
   onPromoUpload,
+  onPreviewUpload,
   uploading,
 }: {
   item: ContentItem;
   onChange: (patch: Partial<ContentItem>) => void;
   onUpload: (file: File, imageId: string) => void;
   onPromoUpload: (file: File) => void;
+  onPreviewUpload: (file: File) => void;
   uploading: boolean;
 }) {
   const images = productImages(item);
@@ -31,6 +33,41 @@ export function ProductEditor({
     });
   return (
     <>
+      <fieldset>
+        <legend>Превью товара</legend>
+        <p className="muted">
+          Отдельная обложка товара. Изменение карусели не меняет превью.
+        </p>
+        <label>
+          Ссылка на превью
+          <input
+            required
+            maxLength={1000}
+            value={item.image}
+            onChange={(e) => onChange({ image: e.target.value })}
+          />
+        </label>
+        {item.image && (
+          <img
+            className="editor-media-preview"
+            src={item.image}
+            alt={item.title}
+          />
+        )}
+        <label>
+          Загрузить превью
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            disabled={uploading}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) onPreviewUpload(file);
+              e.target.value = "";
+            }}
+          />
+        </label>
+      </fieldset>
       <fieldset>
         <legend>Характеристики товара</legend>
         {(item.attributes ?? []).map((row, index) => (

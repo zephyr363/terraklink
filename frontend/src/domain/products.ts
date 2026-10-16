@@ -10,7 +10,7 @@ export function withProductImages(
   item: ContentItem,
   images: ProductImage[],
 ): ContentItem {
-  return { ...item, images, image: images[0]?.url ?? "" };
+  return { ...item, images };
 }
 export function activePromo(
   item: ContentItem,

@@ -102,7 +102,7 @@ export function PublicSite({
   });
   const [regionOpen, setRegionOpen] = useState(false);
   const [cookiesOpen, setCookiesOpen] = useState(false);
-  const [callback, setCallback] = useState(false);
+  const [callback, setCallback] = useState<false | "callback" | "order">(false);
   const [selected, setSelected] = useState<ContentItem | null>(null);
   const [project, setProject] = useState<ContentItem | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -292,11 +292,11 @@ export function PublicSite({
             </div>
             <button
               className="button outline"
-              onClick={() => setCallback(true)}
+              onClick={() => setCallback("callback")}
             >
               {t("Заказать звонок")}
             </button>
-            <button className="button" onClick={() => setCallback(true)}>
+            <button className="button" onClick={() => setCallback("order")}>
               {t("Заказать")}
             </button>
             <button
@@ -695,7 +695,10 @@ export function PublicSite({
                   "Стоимость, сроки, условия оплаты и разгрузки согласуются индивидуально до оформления заказа. В демонстрационной версии онлайн-оплата не предусмотрена.",
                 )}
               </p>
-              <button className="button" onClick={() => setCallback(true)}>
+              <button
+                className="button"
+                onClick={() => setCallback("callback")}
+              >
                 {t("Получить консультацию")}
                 <ArrowRight size={17} />
               </button>
@@ -825,7 +828,7 @@ export function PublicSite({
         <div className="floating-contact">
           <button
             aria-label={t("Заказать обратный звонок")}
-            onClick={() => setCallback(true)}
+            onClick={() => setCallback("callback")}
           >
             <Phone size={20} />
           </button>
@@ -847,7 +850,9 @@ export function PublicSite({
         )}
         {callback && (
           <Dialog
-            title={t("Заказать звонок")}
+            title={t(
+              callback === "order" ? "Заказать продукцию" : "Заказать звонок",
+            )}
             onClose={() => setCallback(false)}
           >
             <p className="muted">
@@ -856,7 +861,10 @@ export function PublicSite({
             <LeadForm
               preview={!!previewDocument}
               region={region}
-              subject={t("Обратный звонок")}
+              subject={t(
+                callback === "order" ? "Заказ продукции" : "Обратный звонок",
+              )}
+              order={callback === "order"}
             />
           </Dialog>
         )}

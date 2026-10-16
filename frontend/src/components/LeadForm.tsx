@@ -10,10 +10,12 @@ export function LeadForm({
   region,
   subject = "",
   preview = false,
+  order = false,
 }: {
   region: string;
   subject?: string;
   preview?: boolean;
+  order?: boolean;
 }) {
   const { t } = useTranslation();
   const [send, { isLoading }] = useCreateLeadMutation();
@@ -28,7 +30,10 @@ export function LeadForm({
       await send({
         name: String(data.get("name")),
         phone: String(data.get("phone")),
-        message: subject,
+        message: [subject, String(data.get("message") ?? "").trim()]
+          .filter(Boolean)
+          .join("\n")
+          .slice(0, 2000),
         region,
         consent: data.get("consent") === "on",
         consent_version: CONSENT_VERSION,
@@ -77,6 +82,17 @@ export function LeadForm({
           autoComplete="tel"
         />
       </label>
+      {order && (
+        <label>
+          {t("Что хотите заказать?")}
+          <textarea
+            name="message"
+            required
+            maxLength={1800}
+            placeholder={t("Укажите продукцию, количество и город доставки")}
+          />
+        </label>
+      )}
       <label className="honeypot" aria-hidden="true">
         {t("Сайт")}
         <input name="website" tabIndex={-1} autoComplete="off" />
@@ -101,7 +117,13 @@ export function LeadForm({
         </p>
       )}
       <button className="button" disabled={isLoading || preview}>
-        {t(isLoading ? "Отправляем…" : "Отправить заявку")}
+        {t(
+          isLoading
+            ? "Отправляем…"
+            : order
+              ? "Отправить заказ"
+              : "Отправить заявку",
+        )}
         <ArrowRight size={18} />
       </button>
       {error && (
