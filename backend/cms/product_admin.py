@@ -1,6 +1,7 @@
 """Native catalog forms write through the same revision boundary as the React editor."""
 
 import uuid
+from pathlib import Path
 
 from django import forms
 from django.conf import settings
@@ -37,6 +38,26 @@ def validate_photo(file):
     return file
 
 
+def validate_video(file):
+    if not file:
+        return file
+    if file.size > settings.MAX_VIDEO_UPLOAD_MB * 1024 * 1024:
+        raise ValidationError(
+            f"Видео должно быть не больше {settings.MAX_VIDEO_UPLOAD_MB} МБ."
+        )
+    suffix = Path(file.name).suffix.lower()
+    if suffix not in {".mp4", ".webm"}:
+        raise ValidationError("Разрешены MP4 и WebM.")
+    header = file.read(32)
+    if not (
+        (suffix == ".mp4" and header[4:8] == b"ftyp")
+        or (suffix == ".webm" and header[:4] == b"\x1aE\xdf\xa3")
+    ):
+        raise ValidationError("Некорректный видеофайл.")
+    file.seek(0)
+    return file
+
+
 def store_photo(file, user):
     suffix = {"JPEG": ".jpg", "PNG": ".png", "WEBP": ".webp"}[Image.open(file).format]
     file.seek(0)
@@ -44,6 +65,30 @@ def store_photo(file, user):
     file.name = uuid.uuid4().hex + suffix
     return MediaAsset.objects.create(
         file=file, kind="image", name=original, uploaded_by=user
+    ).file.url
+
+
+def store_video(file, user):
+    if not file:
+        return file
+    if file.size > settings.MAX_VIDEO_UPLOAD_MB * 1024 * 1024:
+        raise ValidationError(
+            f"Видео должно быть не больше {settings.MAX_VIDEO_UPLOAD_MB} МБ."
+        )
+    suffix = Path(file.name).suffix.lower()
+    if suffix not in {".mp4", ".webm"}:
+        raise ValidationError("Разрешены MP4 и WebM.")
+    header = file.read(32)
+    if not (
+        (suffix == ".mp4" and header[4:8] == b"ftyp")
+        or (suffix == ".webm" and header[:4] == b"\x1aE\xdf\xa3")
+    ):
+        raise ValidationError("Некорректный видеофайл.")
+    file.seek(0)
+    original = file.name[:200]
+    file.name = uuid.uuid4().hex + suffix
+    return MediaAsset.objects.create(
+        file=file, kind="video", name=original, uploaded_by=user
     ).file.url
 
 
@@ -70,8 +115,16 @@ class ProductForm(forms.ModelForm):
     promo_image = forms.CharField(
         label="Изображение промо (ссылка)", max_length=1000, required=False
     )
+    promo_video = forms.CharField(
+        label="Видео промо (ссылка)", max_length=1000, required=False
+    )
     promo_upload = forms.FileField(
         label="Загрузить изображение промо", required=False, validators=[validate_photo]
+    )
+    promo_video_upload = forms.FileField(
+        label="Загрузить видео промо",
+        required=False,
+        validators=[validate_video],
     )
     promo_starts_on = forms.DateField(
         label="Начало промо", required=False, widget=forms.DateInput(attrs={"type": "date"})
@@ -133,6 +186,7 @@ class ProductForm(forms.ModelForm):
             "text": data.get("promo_text", ""),
             "price": data.get("promo_price"),
             "image": data.get("promo_image", ""),
+            "video": data.get("promo_video", ""),
             "starts_on": data.get("promo_starts_on"),
             "ends_on": data.get("promo_ends_on"),
         }
@@ -274,6 +328,8 @@ class ProductAdmin(ModelAdmin):
             obj.preview = store_photo(form.cleaned_data["preview_upload"], request.user)
         if form.cleaned_data.get("promo_upload"):
             obj.promo["image"] = store_photo(form.cleaned_data["promo_upload"], request.user)
+        if form.cleaned_data.get("promo_video_upload"):
+            obj.promo["video"] = store_video(form.cleaned_data["promo_video_upload"], request.user)
         super().save_model(request, obj, form, change)
 
     def save_formset(self, request, form, formset, change):

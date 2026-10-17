@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { activePromo, productImages, withProductImages } from "./products";
+import { activePromo, formatPrice, productImages, withProductImages } from "./products";
 import type { ContentItem } from "./content";
 
 const item: ContentItem = {
@@ -44,5 +44,42 @@ describe("product marketing rules", () => {
         "2026-10-10",
       ),
     ).toBeNull();
+  });
+  it("returns promo video when campaign is active", () => {
+    const product = {
+      ...item,
+      promo: {
+        enabled: true,
+        label: "Акция",
+        text: "",
+        price: null,
+        video: "/promo.mp4",
+        starts_on: "2026-10-01",
+        ends_on: "2026-10-15",
+      },
+    };
+    expect(activePromo(product, "2026-10-10")?.video).toBe("/promo.mp4");
+    expect(activePromo(product, "2026-10-16")).toBeNull();
+  });
+  it("treats promo as inactive when video exists but campaign disabled", () => {
+    const product = {
+      ...item,
+      promo: {
+        enabled: false,
+        label: "Акция",
+        text: "",
+        price: null,
+        video: "/promo.mp4",
+      },
+    };
+    expect(activePromo(product, "2026-10-10")).toBeNull();
+  });
+  it("formats price with ru-RU locale by default", () => {
+    expect(formatPrice("1500.50", "ru")).toBe("1\u00A0500,50");
+    expect(formatPrice(1500, "ru")).toBe("1\u00A0500,00");
+  });
+  it("formats price with kk-KZ locale for Kazakh", () => {
+    expect(formatPrice("1500.50", "kk")).toBe("1\u00A0500,50");
+    expect(formatPrice(1500, "kk")).toBe("1\u00A0500,00");
   });
 });

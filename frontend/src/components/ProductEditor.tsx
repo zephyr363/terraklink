@@ -352,6 +352,41 @@ export function ProductEditor({
           </label>
         </fieldset>
       )}
+      {item.promo && (
+        <fieldset>
+          <legend>Видео промо</legend>
+          {item.promo.video && (
+            <video
+              className="editor-media-preview"
+              src={item.promo.video}
+              controls
+              preload="metadata"
+              style={{ maxHeight: "220px" }}
+            />
+          )}
+          <label>
+            Ссылка на видео промо
+            <input
+              maxLength={1000}
+              value={item.promo.video ?? ""}
+              onChange={(e) => patchPromo({ video: e.target.value })}
+            />
+          </label>
+          <label>
+            Загрузить видео промо
+            <input
+              type="file"
+              accept="video/mp4,video/webm"
+              disabled={uploading}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) onPromoUpload(file);
+                e.target.value = "";
+              }}
+            />
+          </label>
+        </fieldset>
+      )}
       <fieldset>
         <legend>SEO товара</legend>
         <label>
