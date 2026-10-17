@@ -89,6 +89,43 @@ class ItemSerializer(serializers.Serializer):
         return attrs
 
 
+class ProductImageSerializer(serializers.Serializer):
+    id = serializers.CharField(source="image_id")
+    url = serializers.CharField()
+    alt = serializers.CharField()
+
+
+class ProductSerializer(serializers.Serializer):
+    id = serializers.CharField(source="code")
+    code = serializers.CharField()
+    title = serializers.CharField()
+    text = serializers.CharField()
+    category = serializers.CharField()
+    price = serializers.CharField()
+    preview = serializers.CharField()
+    tag = serializers.CharField()
+    attributes = serializers.ListField()
+    promo = serializers.SerializerMethodField()
+    seo_title = serializers.CharField()
+    seo_description = serializers.CharField()
+    language = serializers.CharField()
+    section_id = serializers.CharField()
+    images = ProductImageSerializer(many=True)
+
+    def get_promo(self, obj):
+        promo = obj.promo or {}
+        return {
+            "enabled": promo.get("enabled", False),
+            "label": promo.get("label", ""),
+            "text": promo.get("text", ""),
+            "price": promo.get("price"),
+            "image": promo.get("image", ""),
+            "video": promo.get("video", ""),
+            "starts_on": promo.get("starts_on"),
+            "ends_on": promo.get("ends_on"),
+        }
+
+
 class BannerSerializer(serializers.Serializer):
     template = serializers.ChoiceField(choices=["image", "overlay", "split", "video"])
     animation = serializers.ChoiceField(choices=["none", "fade", "slide", "zoom"])

@@ -20,7 +20,8 @@ import {
 } from "../i18n/navigation";
 import { ProductGallery } from "../components/ProductGallery";
 import { ProductPrice } from "../components/ProductPrice";
-import { activePromo } from "../domain/products";
+import { BrickLoadingScreen } from "../components/BrickLoadingScreen";
+import { activePromo, toContentItem } from "../domain/products";
 import { filterProducts, type CatalogFilter } from "../domain/catalog";
 import { Seo } from "../components/Seo";
 import { AnalyticsTracker } from "../components/AnalyticsTracker";
@@ -35,8 +36,12 @@ import {
   Search,
   X,
 } from "lucide-react";
-import type { ContentItem, SiteDocument } from "../domain/content";
-import { usePublicContentQuery } from "../store/api";
+import type { ContentItem, SiteDocument, ProductListItem } from "../domain/content";
+import {
+  usePublicContentQuery,
+  useProductsQuery,
+  useProductDetailQuery,
+} from "../store/api";
 import { SectionRenderer, ProductCard } from "../components/SectionRenderer";
 import { CookieBanner, RegionDialog } from "../components/Privacy";
 import { Dialog } from "../components/Dialog";
@@ -64,7 +69,7 @@ export function PublicSite({
   previewLanguage?: Language;
 }) {
   const { language, setLanguage, t } = useSiteLanguage(previewLanguage);
-  const { data, isLoading, isError, refetch } = usePublicContentQuery(
+  const { data, isLoading } = usePublicContentQuery(
     undefined,
     { skip: !!previewDocument },
   );
@@ -112,6 +117,7 @@ export function PublicSite({
   const [catalogFilter, setCatalogFilter] = useState<
     Omit<CatalogFilter, "search" | "category">
   >({ min: "", max: "", promoOnly: false, sort: "default" });
+  const [catalogPage, setCatalogPage] = useState(1);
   const [searchOpen, setSearchOpen] = useState(false);
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -125,47 +131,16 @@ export function PublicSite({
   if (!document)
     return (
       <div className="load-screen">
-        {isLoading ? (
-          t("Загружаем сайт…")
-        ) : isError ? (
-          <>
-            <h1>{t("Сайт временно недоступен")}</h1>
-            <p>{t("Не удалось загрузить опубликованный контент.")}</p>
-            <button className="button" onClick={() => refetch()}>
-              {t("Повторить")}
-            </button>
-          </>
-        ) : (
-          t("Контент ещё не опубликован.")
-        )}
+        <BrickLoadingScreen message={t("Загружаем сайт…")} />
       </div>
     );
   const company = document.company;
-  const catalog = document.sections
-    .filter((section) => section.type === "catalog" && section.visible)
+  const sections = document.sections.filter((section) => section.visible);
+  const catalog = sections
+    .filter((section) => section.type === "catalog")
     .flatMap((section) => section.items);
   const products = [
     ...new Map(catalog.map((item) => [item.id, item])).values(),
-  ];
-  const sections = document.sections.filter((section) => section.visible);
-  const filteredProducts = filterProducts(products, {
-    ...catalogFilter,
-    search,
-    category,
-  });
-  const comparedProducts = products.filter((item) =>
-    comparedIds.includes(item.id),
-  );
-  const attributeNames = [
-    ...new Set(
-      comparedProducts.flatMap((item) =>
-        (item.attributes ?? []).map((row) => row.name),
-      ),
-    ),
-  ];
-  const categories = [
-    "Все",
-    ...new Set(products.map((product) => product.category)),
   ];
   const page = currentUrl.pathname;
   const hero = sections.find((section) => section.type === "hero");
@@ -183,10 +158,54 @@ export function PublicSite({
     ["/dealers", "Где купить"],
     ["/contacts", "Контакты"],
   ];
-  const detailProduct = products.find((item) => page === `/catalog/${item.id}`);
+  const catalogCode = page.startsWith("/catalog/") ? page.slice("/catalog/".length) : undefined;
+  const {
+    data: detailProductData,
+    isLoading: detailProductLoading,
+  } = useProductDetailQuery(
+    { code: catalogCode ?? "", language },
+    { skip: !catalogCode },
+  );
+  const detailProduct = detailProductData
+    ? toContentItem(detailProductData)
+    : undefined;
   const detailPromo = detailProduct ? activePromo(detailProduct) : null;
+  const {
+    data: productsData,
+    isLoading: productsLoading,
+  } = useProductsQuery(
+    {
+      language,
+      category: category === "Все" ? undefined : category,
+      search: search || undefined,
+      min_price: catalogFilter.min || undefined,
+      max_price: catalogFilter.max || undefined,
+      promo_only: catalogFilter.promoOnly,
+      sort: catalogFilter.sort,
+      page: catalogPage,
+      page_size: 12,
+    },
+    { skip: page !== "/catalog" },
+  );
   const title =
     detailProduct?.title ?? nav.find(([path]) => path === page)?.[1];
+  const catalogProducts = productsData?.results.map((item) =>
+    toContentItem(item),
+  ) ?? [];
+  const comparedProducts = catalogProducts.filter((item) =>
+    comparedIds.includes(item.id),
+  );
+  const attributeNames = [
+    ...new Set(
+      comparedProducts.flatMap((item) =>
+        (item.attributes ?? []).map((row) => row.name),
+      ),
+    ),
+  ];
+  const categories = [
+    "Все",
+    ...new Set(catalogProducts.map((product) => product.category)),
+  ];
   const regionSelect = (city: string) => {
     setRegion(city);
     try {
@@ -196,6 +215,22 @@ export function PublicSite({
     }
     setRegionOpen(false);
   };
+  if (
+    !document ||
+    (page === "/catalog" && productsLoading) ||
+    (page.startsWith("/catalog/") && detailProductLoading)
+  )
+    return (
+      <div className="load-screen">
+        <BrickLoadingScreen
+          message={
+            isLoading || productsLoading || detailProductLoading
+              ? t("Загружаем сайт…")
+              : t("Контент ещё не опубликован.")
+          }
+        />
+      </div>
+    );
   return (
     <LanguageContext.Provider value={{ language }}>
       {!previewDocument && <AnalyticsTracker />}
@@ -465,7 +500,10 @@ export function PublicSite({
                   <button
                     key={value}
                     className={category === value ? "selected" : ""}
-                    onClick={() => setCategory(value)}
+                    onClick={() => {
+                      setCategory(value);
+                      setCatalogPage(1);
+                    }}
                   >
                     {t(value)}
                   </button>
@@ -480,12 +518,10 @@ export function PublicSite({
                     max="99999999"
                     step="0.01"
                     value={catalogFilter.min}
-                    onChange={(e) =>
-                      setCatalogFilter({
-                        ...catalogFilter,
-                        min: e.target.value,
-                      })
-                    }
+                    onChange={(e) => {
+                      setCatalogFilter({ ...catalogFilter, min: e.target.value });
+                      setCatalogPage(1);
+                    }}
                   />
                 </label>
                 <label>
@@ -496,24 +532,23 @@ export function PublicSite({
                     max="99999999"
                     step="0.01"
                     value={catalogFilter.max}
-                    onChange={(e) =>
-                      setCatalogFilter({
-                        ...catalogFilter,
-                        max: e.target.value,
-                      })
-                    }
+                    onChange={(e) => {
+                      setCatalogFilter({ ...catalogFilter, max: e.target.value });
+                      setCatalogPage(1);
+                    }}
                   />
                 </label>
                 <label>
                   {t("Сортировка")}
                   <select
                     value={catalogFilter.sort}
-                    onChange={(e) =>
+                    onChange={(e) => {
                       setCatalogFilter({
                         ...catalogFilter,
                         sort: e.target.value as CatalogFilter["sort"],
-                      })
-                    }
+                      });
+                      setCatalogPage(1);
+                    }}
                   >
                     <option value="default">{t("По умолчанию")}</option>
                     <option value="price-asc">{t("Сначала дешевле")}</option>
@@ -525,12 +560,13 @@ export function PublicSite({
                   <input
                     type="checkbox"
                     checked={catalogFilter.promoOnly}
-                    onChange={(e) =>
+                    onChange={(e) => {
                       setCatalogFilter({
                         ...catalogFilter,
                         promoOnly: e.target.checked,
-                      })
-                    }
+                      });
+                      setCatalogPage(1);
+                    }}
                   />
                   {t("Только акции")}
                 </label>
@@ -545,6 +581,7 @@ export function PublicSite({
                     });
                     setSearch("");
                     setCategory("Все");
+                    setCatalogPage(1);
                   }}
                 >
                   {t("Сбросить фильтры")}
@@ -557,97 +594,120 @@ export function PublicSite({
                     {t("Минимальная цена больше максимальной.")}
                   </p>
                 )}
-              <p className="muted">
-                {t("Найдено товаров:")} {filteredProducts.length}
-              </p>
-              {!!comparedProducts.length && (
-                <section className="comparison">
-                  <h2>{t("Сравнение товаров")}</h2>
-                  <p>{t("Выберите до четырёх товаров для сравнения.")}</p>
-                  <button
-                    className="text-button"
-                    onClick={() => setComparedIds([])}
-                  >
-                    {t("Очистить сравнение")}
-                  </button>
-                  <div className="table-scroll">
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>{t("Характеристики")}</th>
-                          {comparedProducts.map((item) => (
-                            <th key={item.id}>
-                              {item.title}
-                              <button
-                                className="text-button"
-                                aria-label={`${t("Убрать из сравнения")} ${item.title}`}
-                                onClick={() =>
-                                  setComparedIds(
-                                    comparedIds.filter((id) => id !== item.id),
-                                  )
-                                }
-                              >
-                                ×
-                              </button>
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <th>{t("Цена, ₸")}</th>
-                          {comparedProducts.map((item) => (
-                            <td key={item.id}>
-                              <ProductPrice item={item} />
-                            </td>
-                          ))}
-                        </tr>
-                        {attributeNames.map((name) => (
-                          <tr key={name}>
-                            <th>{name}</th>
-                            {comparedProducts.map((item) => (
-                              <td key={item.id}>
-                                {item.attributes?.find(
-                                  (row) => row.name === name,
-                                )?.value ?? "—"}
-                              </td>
+              {productsData && (
+                <>
+                  <p className="muted">
+                    {t("Найдено товаров:")} {productsData.count}
+                  </p>
+                  {!!comparedProducts.length && (
+                    <section className="comparison">
+                      <h2>{t("Сравнение товаров")}</h2>
+                      <p>{t("Выберите до четырёх товаров для сравнения.")}</p>
+                      <button
+                        className="text-button"
+                        onClick={() => setComparedIds([])}
+                      >
+                        {t("Очистить сравнение")}
+                      </button>
+                      <div className="table-scroll">
+                        <table>
+                          <thead>
+                            <tr>
+                              <th>{t("Характеристики")}</th>
+                              {comparedProducts.map((item) => (
+                                <th key={item.id}>
+                                  {item.title}
+                                  <button
+                                    className="text-button"
+                                    aria-label={`${t("Убрать из сравнения")} ${item.title}`}
+                                    onClick={() =>
+                                      setComparedIds(
+                                        comparedIds.filter((id) => id !== item.id),
+                                      )
+                                    }
+                                  >
+                                    ×
+                                  </button>
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr>
+                              <th>{t("Цена, ₸")}</th>
+                              {comparedProducts.map((item) => (
+                                <td key={item.id}>
+                                  <ProductPrice item={item} />
+                                </td>
+                              ))}
+                            </tr>
+                            {attributeNames.map((name) => (
+                              <tr key={name}>
+                                <th>{name}</th>
+                                {comparedProducts.map((item) => (
+                                  <td key={item.id}>
+                                    {item.attributes?.find(
+                                      (row) => row.name === name,
+                                    )?.value ?? "—"}
+                                  </td>
+                                ))}
+                              </tr>
                             ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </section>
-              )}
-              <div className="product-grid">
-                {filteredProducts.map((item) => (
-                  <ProductCard
-                    key={item.id}
-                    item={item}
-                    onSelect={setSelected}
-                    compared={comparedIds.includes(item.id)}
-                    compareDisabled={
-                      comparedProducts.length >= 4 &&
-                      !comparedIds.includes(item.id)
-                    }
-                    onCompare={(item) =>
-                      setComparedIds((ids) =>
-                        ids.includes(item.id)
-                          ? ids.filter((id) => id !== item.id)
-                          : ids.length < 4
-                            ? [...ids, item.id]
-                            : ids,
-                      )
-                    }
-                  />
-                ))}
-              </div>
-              {!filteredProducts.length && (
-                <p className="empty-state">
-                  {t(
-                    "Ничего не найдено. Попробуйте другое название или категорию.",
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
                   )}
-                </p>
+                  <div className="product-grid">
+                    {catalogProducts.map((item) => (
+                      <ProductCard
+                        key={item.id}
+                        item={item}
+                        onSelect={setSelected}
+                        compared={comparedIds.includes(item.id)}
+                        compareDisabled={
+                          comparedProducts.length >= 4 &&
+                          !comparedIds.includes(item.id)
+                        }
+                        onCompare={(item) =>
+                          setComparedIds((ids) =>
+                            ids.includes(item.id)
+                              ? ids.filter((id) => id !== item.id)
+                              : ids.length < 4
+                                ? [...ids, item.id]
+                                : ids,
+                          )
+                        }
+                      />
+                    ))}
+                  </div>
+                  <div className="catalog-pagination">
+                    <button
+                      className="button outline small"
+                      disabled={!productsData.has_previous}
+                      onClick={() => setCatalogPage(productsData.page - 1)}
+                    >
+                      {t("Назад")}
+                    </button>
+                    <span className="muted">
+                      {productsData.page} / {productsData.total_pages}
+                    </span>
+                    <button
+                      className="button outline small"
+                      disabled={!productsData.has_next}
+                      onClick={() => setCatalogPage(productsData.page + 1)}
+                    >
+                      {t("Вперёд")}
+                    </button>
+                  </div>
+                  {!productsData.results.length && (
+                    <p className="empty-state">
+                      {t(
+                        "Ничего не найдено. Попробуйте другое название или категорию.",
+                      )}
+                    </p>
+                  )}
+                </>
               )}
             </div>
           )}

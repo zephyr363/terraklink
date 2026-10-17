@@ -114,6 +114,35 @@ export interface Lead extends Omit<LeadRequest, "consent" | "honeypot"> {
   status: string;
 }
 
+export interface ProductListItem {
+  id: string;
+  code: string;
+  title: string;
+  text: string;
+  category: string;
+  price: string;
+  preview: string;
+  tag: string;
+  attributes: { name: string; value: string }[];
+  promo: {
+    enabled: boolean;
+    label: string;
+    text: string;
+    price: string | null;
+    image: string;
+    video: string;
+    starts_on: string | null;
+    ends_on: string | null;
+  } | null;
+  seo_title: string;
+  seo_description: string;
+  language: string;
+  section_id: string;
+  images: { id: string; url: string; alt: string }[];
+}
+
+export interface ProductDetailItem extends ProductListItem {}
+
 export function newSection(type: SectionType): Section {
   return {
     id: `${type}-${crypto.randomUUID()}`,

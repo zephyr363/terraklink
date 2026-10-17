@@ -11,6 +11,9 @@ export default defineConfig({
           asset.names?.some((name) => name.endsWith(".css"))
             ? "assets/app.css"
             : "assets/[name]-[hash][extname]",
+        manualChunks: {
+          react: ["react", "react-dom"],
+        },
       },
     },
   },

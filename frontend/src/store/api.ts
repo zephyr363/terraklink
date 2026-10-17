@@ -5,7 +5,13 @@ import type {
   FetchBaseQueryError,
 } from "@reduxjs/toolkit/query";
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { ContentResponse, Lead, LeadRequest } from "../domain/content";
+import type {
+  ContentResponse,
+  Lead,
+  LeadRequest,
+  ProductListItem,
+  ProductDetailItem,
+} from "../domain/content";
 
 export const authSlice = createSlice({
   name: "auth",
@@ -115,6 +121,58 @@ export const contentApi = createApi({
       query: () => "editor/leads/",
       providesTags: ["Leads"],
     }),
+    products: builder.query<
+      {
+        count: number;
+        page_size: number;
+        page: number;
+        total_pages: number;
+        has_next: boolean;
+        has_previous: boolean;
+        results: ProductListItem[];
+      },
+      {
+        language?: string;
+        category?: string;
+        search?: string;
+        min_price?: string;
+        max_price?: string;
+        promo_only?: boolean;
+        sort?: string;
+        page?: number;
+        page_size?: number;
+      }
+    >({
+      query: (params) => ({
+        url: "products/",
+        params: {
+          language: params.language ?? "ru",
+          category: params.category,
+          search: params.search,
+          min_price: params.min_price,
+          max_price: params.max_price,
+          promo_only: params.promo_only ? "true" : undefined,
+          sort: params.sort ?? "default",
+          page: params.page ?? 1,
+          page_size: params.page_size ?? 12,
+        },
+      }),
+      transformResponse: (response: {
+        count: number;
+        page_size: number;
+        page: number;
+        total_pages: number;
+        has_next: boolean;
+        has_previous: boolean;
+        results: ProductListItem[];
+      }) => response,
+    }),
+    productDetail: builder.query<ProductDetailItem, { code: string; language?: string }>({
+      query: ({ code, language = "ru" }) => ({
+        url: `products/${code}/`,
+        params: { language },
+      }),
+    }),
   }),
 });
 export const {
@@ -129,6 +187,8 @@ export const {
   useUploadMutation,
   useCreateLeadMutation,
   useLeadsQuery,
+  useProductsQuery,
+  useProductDetailQuery,
 } = contentApi;
 
 // DRF errors may be a string, a list, or nested field errors.
